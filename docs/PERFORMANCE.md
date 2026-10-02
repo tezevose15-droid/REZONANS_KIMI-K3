@@ -1,217 +1,159 @@
-# Performance
+# Производительность
 
-All figures measured on a single machine: AMD EPYC 7763, 124 vCPU (2×62, no SMT),
-228 GiB RAM, NVMe measured at 3.2 GB/s O_DIRECT, Ubuntu 24.04, GCC 13.3, AVX2 without
-AVX-512. Background auto-updates were disabled before measurement.
+Все цифры измерены на одной машине: AMD EPYC 7763, 124 vCPU (2×62, без SMT), 228 ГиБ RAM, NVMe с измеренными 3,2 ГБ/с O_DIRECT, Ubuntu 24.04, GCC 13.3, AVX2 без AVX-512. Фоновые автообновления были отключены перед измерениями.
 
-**Every table on this page is transcribed from raw output in [data/](data/).** The full
-machine capture is [data/environment.txt](data/environment.txt). Nothing here is quoted
-from memory or rounded by hand, if a table and its data file disagree, the data file is
-right and this page has a bug.
+**Каждая таблица на этой странице переписана из сырых выводов в [data/](data/).** Полный снимок окружения машины — [data/environment.txt](data/environment.txt). Ничто здесь не цитируется по памяти и не округляется вручную; если таблица и её файл данных расходятся — прав файл данных, а на этой странице ошибка.
 
-> **Read [the noise floor](#the-noise-floor) before quoting any single number.** Three
-> runs of an *identical* configuration span 33%. Differences smaller than that are not
-> effects.
+> **Прочитайте [уровень шума](#уровень-шума) перед цитированием любого одиночного числа.** Три прогона *идентичной* конфигурации дают разброс 33%. Различия меньше этого — не эффекты.
 
-## The memory ladder
+## Лестница памяти
 
-Twelve budgets, each enforced by a hard cgroup cap, same prompt, same binary.
-Raw: [data/memory-ladder.tsv](data/memory-ladder.tsv).
+Двенадцать бюджетов, каждый ограничен жёстким cgroup-лимитом, один промпт, один бинарник. Сырые данные: [data/memory-ladder.tsv](data/memory-ladder.tsv).
 
-| RAM | pinned layers | expert cache | s/token | vs 8 GB | expert hit | trunk hit | GB read/tok | peak RSS |
+| RAM | закреплённых слоёв | кэш экспертов | с/токен | vs 8 ГБ | hit экспертов | hit trunk | ГБ/токен | пик RSS |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 8 | 0 | 0.49 | 32.69 | 1.00× | 0.0% | 0.0% | 25.83 | 8.24 |
-| 12 | 0 | 2.79 | 31.41 | 1.04× | 0.0% | 0.0% | 25.83 | 10.53 |
-| 16 | 3 | 4.39 | 32.21 | 1.01× | 0.0% | 2.8% | 25.83 | 16.00 |
-| 24 | 7 | 7.58 | 31.85 | 1.03× | 0.0% | 6.6% | 25.83 | 23.95 |
-| 32 | 11 | 10.80 | 31.44 | 1.04× | 0.0% | 10.3% | 25.83 | 31.90 |
-| 48 | 19 | 17.19 | 29.76 | 1.10× | 0.0% | 17.9% | 25.83 | 47.80 |
-| 64 | 27 | 23.59 | 28.60 | 1.14× | 0.0% | 25.4% | 25.83 | 63.71 |
-| 96 | 43 | 36.39 | 24.40 | 1.34× | 29.9% | 40.5% | 18.11 | 95.51 |
-| 128 | 60 | 49.19 | 29.40 | 1.11× | 32.2% | 56.5% | 17.51 | 128.18 |
-| 160 | 76 | 61.99 | 26.31 | 1.24× | 33.1% | 71.5% | 17.28 | 159.98 |
-| 192 | 90 | 77.00 | 21.32 | 1.53× | 35.5% | 84.7% | 16.65 | 191.83 |
-| 224 | 90 | 108.98 | 19.21 | 1.70× | 43.8% | 84.7% | 14.53 | 223.82 |
+| 8 | 0 | 0,49 | 32,69 | 1,00× | 0,0% | 0,0% | 25,83 | 8,24 |
+| 12 | 0 | 2,79 | 31,41 | 1,04× | 0,0% | 0,0% | 25,83 | 10,53 |
+| 16 | 3 | 4,39 | 32,21 | 1,01× | 0,0% | 2,8% | 25,83 | 16,00 |
+| 24 | 7 | 7,58 | 31,85 | 1,03× | 0,0% | 6,6% | 25,83 | 23,95 |
+| 32 | 11 | 10,80 | 31,44 | 1,04× | 0,0% | 10,3% | 25,83 | 31,90 |
+| 48 | 19 | 17,19 | 29,76 | 1,10× | 0,0% | 17,9% | 25,83 | 47,80 |
+| 64 | 27 | 23,59 | 28,60 | 1,14× | 0,0% | 25,4% | 25,83 | 63,71 |
+| 96 | 43 | 36,39 | 24,40 | 1,34× | 29,9% | 40,5% | 18,11 | 95,51 |
+| 128 | 60 | 49,19 | 29,40 | 1,11× | 32,2% | 56,5% | 17,51 | 128,18 |
+| 160 | 76 | 61,99 | 26,31 | 1,24× | 33,1% | 71,5% | 17,28 | 159,98 |
+| 192 | 90 | 77,00 | 21,32 | 1,53× | 35,5% | 84,7% | 16,65 | 191,83 |
+| 224 | 90 | 108,98 | 19,21 | 1,70× | 43,8% | 84,7% | 14,53 | 223,82 |
 
-**Every row produced byte-identical output**: `17374, 20829, 10, 427, 414, 1008, 606,
-142957`. 28x the memory changes the speed and nothing else.
+**Каждая строка дала побайтово идентичный вывод**: `17374, 20829, 10, 427, 414, 1008, 606, 142957`. В 28 раз больше памяти меняет скорость и ничего больше.
 
-## Two caches, and only one of them matters below 96 GB
+## Два кэша, и только один из них имеет значение ниже 96 ГБ
 
-The engine has two independent caches. They do not behave alike.
+У движка два независимых кэша. Они ведут себя неодинаково.
 
-**The expert cache does nothing below ~36 GB of arena.** From 28 slots to 1,344 slots the
-retention stays at 0.0% and the bytes read per token stay pinned at *exactly* 25.83 GB.
-Seven consecutive budgets, a 48× increase in cache size, zero change in bytes moved.
+**Кэш экспертов ничего не делает ниже ~36 ГБ арены.** От 28 слотов до 1 344 слотов удержание остаётся на 0,0%, а считанные байты на токен остаются зафиксированными на *ровно* 25,83 ГБ. Семь бюджетов подряд, 48× увеличение размера кэша, ноль изменений в перемещённых байтах.
 
-This is a property of the model, not a defect in the cache. K3's router is trained with
-Quantile Balancing, which deliberately flattens expert usage across the pool. With 16 of
-896 experts selected per layer and no hot subset to exploit, there is nothing for an LRU
-to retain.
+Это свойство модели, а не дефект кэша. Роутер K3 обучен с Quantile Balancing, который намеренно выравнивает использование экспертов по пулу. При выборе 16 из 896 экспертов на слой и отсутствии горячего подмножества для эксплуатации LRU нечего удерживать.
 
-**The trunk ring is the one that responds.** Its hit rate tracks pinned layers almost
-exactly:
+**Кольцо trunk — то, что реагирует.** Его hit rate почти точно отслеживает число закреплённых слоёв:
 
-| pinned | predicted (n/93) | measured |
+| закреплено | предсказано (n/93) | измерено |
 |---:|---:|---:|
-| 3 | 3.2% | 2.8% |
-| 7 | 7.5% | 6.6% |
-| 11 | 11.8% | 10.3% |
-| 27 | 29.0% | 25.4% |
-| 90 | 96.8% | 96.8%¹ |
+| 3 | 3,2% | 2,8% |
+| 7 | 7,5% | 6,6% |
+| 11 | 11,8% | 10,3% |
+| 27 | 29,0% | 25,4% |
+| 90 | 96,8% | 96,8%¹ |
 
-¹ steady state. The 8-token runs report 84.7% because token 0 pays the pinning cost and
-tokens 1 to 7 each hit 90 layers: 7 × 90 / 744 = 84.7%.
+¹ установившийся режим. 8-токенные прогоны показывают 84,7%, потому что токен 0 оплачивает стоимость закрепления, а токены с 1 по 7 попадают в 90 слоёв каждый: 7 × 90 / 744 = 84,7%.
 
-The mechanism is simply arithmetic: per token the engine reads **108.81 GB of trunk**
-against **25.83 GB of experts**, 4.2× the bytes and 2.9× the time. A gigabyte given to
-the trunk removes ~1.17 GB/token of guaranteed traffic. A gigabyte given to the expert
-cache removes, below the knee, nothing.
+Механизм — простая арифметика: на токен движок читает **108,81 ГБ trunk** против **25,83 ГБ экспертов**, в 4,2× больше байт и в 2,9× больше времени. Гигабайт, отданный trunk, убирает ~1,17 ГБ/токен гарантированного трафика. Гигабайт, отданный кэшу экспертов, убирает, ниже колена, ничего.
 
-### How much cache would be enough
+### Сколько кэша было бы достаточно
 
-The ladder can only answer this where it happened to sample. Replaying the recorded
-request trace answers it everywhere, for free
-[data/expert-cache-capacity.txt](data/expert-cache-capacity.txt), regenerated by:
+Лестница может ответить на это только там, где она случайно сделала выборку. Проигрывание записанной трассы запросов отвечает везде и бесплатно — [data/expert-cache-capacity.txt](data/expert-cache-capacity.txt), перегенерируется командой:
 
 ```bash
 python3 tools/sim_cache.py tests/fixtures/expert_trace.bin
 ```
 
-100,096 recorded expert requests, 10,010 distinct experts (12.1% of the pool):
+100 096 записанных запросов экспертов, 10 010 различных экспертов (12,1% пула):
 
-| cache | slots | LRU | Belady | GB read/token |
+| кэш | слоты | LRU | Belady | ГБ/токен |
 |---:|---:|---:|---:|---:|
-| 8 GB | 455 | 36.2% | 39.4% | 16.47 |
-| 32 GB | 1,823 | 36.2% | 49.0% | 16.47 |
-| 64 GB | 3,647 | 36.2% | 61.7% | 16.47 |
-| 128 GB | 7,294 | 49.2% | 84.6% | 13.12 |
-| **192 GB** | 10,941 | **90.0%** | 90.0% | **2.58** |
-| 1450 GB | 82,633 | 90.0% | 90.0% | 2.58 |
+| 8 ГБ | 455 | 36,2% | 39,4% | 16,47 |
+| 32 ГБ | 1 823 | 36,2% | 49,0% | 16,47 |
+| 64 ГБ | 3 647 | 36,2% | 61,7% | 16,47 |
+| 128 ГБ | 7 294 | 49,2% | 84,6% | 13,12 |
+| **192 ГБ** | 10 941 | **90,0%** | 90,0% | **2,58** |
+| 1450 ГБ | 82 633 | 90,0% | 90,0% | 2,58 |
 
-**LRU is flat from 8 GB to 64 GB**, an 8× increase in capacity buying nothing, then
-saturates at 192 GB, which is where the working set finally fits. Belady's optimal
-policy climbs steadily over the same range, so the flatness is LRU's, not the workload's:
-there is exploitable locality, and LRU cannot reach it.
+**LRU плоский от 8 ГБ до 64 ГБ** — 8× увеличение ёмкости ничего не даёт, затем насыщается на 192 ГБ, где рабочий набор наконец помещается. Оптимальная политика Belady стабильно растёт на том же отрезке, поэтому плоскость — свойство LRU, а не нагрузки: эксплуатируемая локальность есть, и LRU не может до неё добраться.
 
-Two things to hold onto:
+Два момента, которые стоит запомнить:
 
-- **This x-axis is cache size; the ladder's is total budget.** The ladder's 8 GB row has
-  only 0.49 GB of cache (28 slots), which is why it shows 0.0% retention and this table
-  shows 36.2% at 455 slots. They do not disagree.
-- **These are upper bounds, not forecasts.** The trace was recorded during full-recompute
-  decode, which re-touches the same experts ~68 times. Steady-state incremental decode
-  has far less reuse and will do worse. The file says so itself.
+- **Эта ось X — размер кэша; у лестницы — общий бюджет.** У строки лестницы 8 ГБ кэша всего 0,49 ГБ (28 слотов), поэтому она показывает удержание 0,0%, а эта таблица показывает 36,2% при 455 слотах. Они не противоречат друг другу.
+- **Это верхние границы, а не прогнозы.** Трасса записана во время декодинга с полным перевычислением, который повторно касается тех же экспертов ~68 раз. Установившийся инкрементальный декодинг имеет гораздо меньше повторного использования и покажет результат хуже. В файле так и сказано.
 
-The practical reading: below ~192 GB of *cache alone*, capacity is not the lever. That is
-the same conclusion the fixed-budget sweep below reaches from the opposite direction.
+Практический вывод: ниже ~192 ГБ *только кэша* ёмкость — не рычаг. Это тот же вывод, к которому приходит sweep с фиксированным бюджетом ниже, но с противоположной стороны.
 
-## Allocation beats capacity
+## Распределение важнее ёмкости
 
-At a **fixed** total budget, varying only the split. All twelve rows, from
-[data/trunk-cache-split.tsv](data/trunk-cache-split.tsv):
+При **фиксированном** общем бюджете, варьируется только разбиение. Все двенадцать строк из [data/trunk-cache-split.tsv](data/trunk-cache-split.tsv):
 
-| total | trunk | cache | s/token | | total | trunk | cache | s/token |
+| всего | trunk | кэш | с/токен | | всего | trunk | кэш | с/токен |
 |---:|---:|---:|---:|---|---:|---:|---:|---:|
-| 128 | 12.3 | 110.7 | 28.38 | | 32 | 2.7 | 24.3 | 31.23 |
-| 128 | 30.8 | 92.2 | 25.20 | | 32 | 6.8 | 20.2 | 30.58 |
-| 128 | 49.2 | 73.8 | 25.69 | | 32 | 10.8 | 16.2 | 31.25 |
-| 128 | 73.8 | 49.2 | 18.37 | | 32 | 16.2 | 10.8 | 30.88 |
-| 128 | 98.4 | 24.6 | 19.46 | | 32 | 21.6 | 5.4 | 29.13 |
-| 128 | **110.0** | **13.0** | **16.80** | | 32 | **25.6** | **1.4** | **28.06** |
+| 128 | 12,3 | 110,7 | 28,38 | | 32 | 2,7 | 24,3 | 31,23 |
+| 128 | 30,8 | 92,2 | 25,20 | | 32 | 6,8 | 20,2 | 30,58 |
+| 128 | 49,2 | 73,8 | 25,69 | | 32 | 10,8 | 16,2 | 31,25 |
+| 128 | 73,8 | 49,2 | 18,37 | | 32 | 16,2 | 10,8 | 30,88 |
+| 128 | 98,4 | 24,6 | 19,46 | | 32 | 21,6 | 5,4 | 29,13 |
+| 128 | **110,0** | **13,0** | **16,80** | | 32 | **25,6** | **1,4** | **28,06** |
 
-**1.69× faster at identical total memory** (28.38 → 16.80 at 128 GB). Note that the
-*fastest* configuration has 0.0% expert-cache retention.
+**В 1,69× быстрее при идентичной общей памяти** (28,38 → 16,80 при 128 ГБ). Заметьте, что *самая быстрая* конфигурация имеет удержание кэша экспертов 0,0%.
 
-**How far this goes.** Each row is a single sample against a 33% noise floor, so the
-endpoint comparison alone would not settle it, and the trend is **not** strictly
-monotonic. There are two inversions at 128 GB (+1.9% at 30.8→49.2, +5.9% at 73.8→98.4)
-and one at 32 GB (+2.2%). Every one of them is far inside the noise floor, so none is
-evidence against the trend; equally, no individual step is evidence for it.
+**Насколько далеко это заходит.** Каждая строка — единичная выборка на фоне 33% шума, поэтому одно сравнение крайних точек само по себе не решает вопроса, а тренд **не** строго монотонен. Есть две инверсии при 128 ГБ (+1,9% при 30,8→49,2, +5,9% при 73,8→98,4) и одна при 32 ГБ (+2,2%). Каждая из них глубоко внутри уровня шума, поэтому ни одна не является свидетельством против тренда; равно как ни один отдельный шаг не является свидетельством за него.
 
-What carries the conclusion is the rank correlation over twelve points across **two
-independent budgets**: Spearman ρ = −0.886 at 128 GB and −0.714 at 32 GB. Two separately
-run sweeps, at a 4× difference in total memory, both order the splits the same way.
+Что подкрепляет вывод — ранговая корреляция по двенадцати точкам в **двух независимых бюджетах**: Спирмен ρ = −0,886 при 128 ГБ и −0,714 при 32 ГБ. Два отдельно выполненных sweep'а, при 4× разнице в общей памяти, оба упорядочивают разбиения одинаково.
 
-The magnitude is a different matter. 1.69× is one endpoint comparison of single samples
-and is **not** replicated to the three-run standard this project asks for elsewhere (see
-CONTRIBUTING.md). Treat the direction as established and the factor as approximate;
-`benchmarks/split-sweep.sh` re-runs it with repetitions.
+Величина — отдельный вопрос. 1,69× — это одно сравнение крайних точек из единичных выборок и **не** реплицировано по стандарту трёх прогонов, который проект требует в остальных местах (см. CONTRIBUTING.md). Считайте направление установленным, а коэффициент — приблизительным; `benchmarks/split-sweep.sh` перезапускает эксперимент с повторениями.
 
-128 GB allocated well (16.80 s/token) beats 224 GB allocated badly (19.21). If you take
-one tuning decision from this document, take that one. It is also the one the mechanism
-predicts independently of any measurement: the trunk is re-read in full every token and
-the experts are not.
+128 ГБ, распределённых хорошо (16,80 с/токен), обгоняют 224 ГБ, распределённых плохо (19,21). Если вы вынесете из этого документа одно решение по тюнингу — возьмите это. Оно же предсказывается механизмом независимо от любых измерений: trunk перечитывается полностью каждый токен, а эксперты — нет.
 
-## The noise floor
+## Уровень шума
 
-Three runs of an identical configuration, back to back, on a quiet machine.
-Raw: [data/replication.tsv](data/replication.tsv).
+Три прогона идентичной конфигурации, подряд, на тихой машине. Сырые данные: [data/replication.tsv](data/replication.tsv).
 
-| run | s/token |
+| прогон | с/токен |
 |---:|---:|
-| 1 | 14.78 |
-| 2 | 14.67 |
-| 3 | 20.14 |
+| 1 | 14,78 |
+| 2 | 14,67 |
+| 3 | 20,14 |
 
-mean **16.53**, sd **3.13**, spread **33.1%**.
+среднее **16,53**, ст. откл. **3,13**, разброс **33,1%**.
 
-Same binary, same prompt, same flags, same minute. A third of the measurement is noise.
+Один бинарник, один промпт, одни флаги, одна минута. Треть измерения — шум.
 
-**What this means for every table above.** Each row is a *single sample*. Any difference
-under ~33% is not an established effect. Concretely:
+**Что это значит для каждой таблицы выше.** Каждая строка — *единичная выборка*. Любая разница менее ~33% — не установленный эффект. Конкретно:
 
-- The 128 GB row (29.40) sitting above its neighbours (24.40, 26.31) is **inside the
-  band**. It is dispersion, not an anomaly, and it needs no explanation.
-- Individual step-to-step differences in the middle of the ladder are not resolvable.
+- Строка 128 ГБ (29,40), находящаяся выше соседей (24,40, 26,31), **внутри полосы**. Это дисперсия, а не аномалия, и объяснять её не нужно.
+- Пошаговые различия в середине лестницы неразличимы.
 
-**What survives**, being larger than the floor:
+**Что выдерживает**, будучи больше уровня шума:
 
-- the ladder's overall span, 8 GB → 224 GB, a **70%** change;
-- trunk-first at 128 GB, a **69%** change.
+- общий размах лестницы, 8 ГБ → 224 ГБ, изменение на **70%**;
+- trunk-first при 128 ГБ, изменение на **69%**.
 
-**What is untouched by noise entirely**, these are counts and byte totals, not stopwatch
-readings, and no amount of scheduling jitter moves them:
+**Что вообще не затронуто шумом** — это счётчики и суммы байт, а не показания секундомера, и никакой джиттер планировщика их не сдвинет:
 
-- byte-identical output at all twelve budgets;
-- `GB read/token` pinned at exactly 25.83 across seven of them;
-- expert retention of 0.0% from 28 to 1,344 slots;
-- trunk hit ≈ pinned/93.
+- побайтово идентичный вывод на всех двенадцати бюджетах;
+- `ГБ/токен` зафиксирован ровно на 25,83 на семи из них;
+- удержание экспертов 0,0% от 28 до 1 344 слотов;
+- hit trunk ≈ pinned/93.
 
-So the *mechanism* rests on counts and stands. What is soft is the precise second-count
-attached to any one configuration.
+Так что *механизм* опирается на счётчики и устойчив. Что мягко — так это точные секунды, прикреплённые к любой отдельной конфигурации.
 
-Likely contributors to the variance, none isolated: virtualised NVMe latency on a
-workload that moves ~135 GB per token; page-cache interaction at 128 GB RSS on a 228 GiB
-box; NUMA effects across two sockets; and cold-start amortisation, every ladder run is
-only 8 tokens, and token 0 pays the full pinning cost. The last is supported by the
-end-to-end generations at 16 to 32 tokens, which spread only 10% (10.66 to 11.79 s/token)
-against this run's 33%.
+Вероятные contributors дисперсии, ни один не изолирован: задержки виртуализированного NVMe на нагрузке, перемещающей ~135 ГБ на токен; взаимодействие с кэшем страниц при 128 ГБ RSS на машине 228 ГиБ; NUMA-эффекты на двух сокетах; и амортизация холодного старта — каждый прогон лестницы всего 8 токенов, и токен 0 оплачивает полную стоимость закрепления. Последнее подтверждается сквозными генерациями на 16–32 токена, которые дают разброс лишь 10% (10,66–11,79 с/токен) против 33% у этого прогона.
 
-## Longer runs are faster
+## Более длинные прогоны быстрее
 
-Because cold start is amortised:
+Потому что холодный старт амортизируется:
 
-| tokens | s/token |
+| токенов | с/токен |
 |---:|---:|
-| 8 (ladder, best) | 19.21 |
-| 16 to 32 (sustained generations) | **10.66 to 11.79** |
+| 8 (лестница, лучший) | 19,21 |
+| 16–32 (установившиеся генерации) | **10,66–11,79** |
 
-The ladder understates sustained throughput. Quote it as a *comparison across budgets*,
-not as the engine's speed.
+Лестница занижает установившуюся пропускную способность. Цитируйте её как *сравнение между бюджетами*, а не как скорость движка.
 
-## Reproducing
+## Воспроизведение
 
 ```bash
 make -j
-./scripts/k3-doctor.sh ~/k3model          # what this machine should manage
-./benchmarks/memory-ladder.sh ~/k3model ~/k3trunk out/   # the full sweep
+./scripts/k3-doctor.sh ~/k3model          # что эта машина должна потянуть
+./benchmarks/memory-ladder.sh ~/k3model ~/k3trunk out/   # полный sweep
 ```
 
-See [BENCHMARKING.md](BENCHMARKING.md), in particular, **replicate before you
-conclude**. Replication is not a formality here: on a 33% noise floor, a single-sample
-difference of 20% is indistinguishable from dispersion, and treating one as a finding is
-the easiest mistake to make with this engine.
+См. [BENCHMARKING.md](BENCHMARKING.md), в частности — **реплицируйте, прежде чем делать выводы**. Репликация здесь не формальность: на уровне шума 33% единичная разница в 20% неотличима от дисперсии, и принять её за находку — самая лёгкая ошибка при работе с этим движком.
 
-The raw output of the run these tables come from is in [data/](data/), so a new run can
-be compared against it directly rather than against the numbers as transcribed.
+Сырой вывод прогона, откуда взяты эти таблицы, находится в [data/](data/), поэтому новый прогон можно сравнивать напрямую с ним, а не с числами как переписанными.

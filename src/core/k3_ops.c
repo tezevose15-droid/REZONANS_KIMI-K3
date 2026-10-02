@@ -53,9 +53,9 @@
 static void k3_fatal_oom(const char *what, size_t bytes)
 {
     fprintf(stderr,
-            "k3: FATAL, could not allocate %zu bytes for %s.\n"
-            "    Aborting rather than continuing with an uninitialised buffer, which\n"
-            "    would produce plausible-looking but meaningless output.\n",
+            "k3: КРИТИЧЕСКАЯ ОШИБКА, не удалось выделить %zu байт для %s.\n"
+            "    Прерывание вместо продолжения с неинициализированным буфером, что\n"
+            "    породило бы правдоподобный, но бессмысленный вывод.\n",
             bytes, what);
     abort();
 }
@@ -68,11 +68,11 @@ static void k3_fatal_oom(const char *what, size_t bytes)
 static void k3_fatal_bound(const char *what, long value, long limit)
 {
     fprintf(stderr,
-            "k3: FATAL, %s is %ld, which exceeds the limit of %ld.\n"
-            "    Aborting rather than returning without writing the output buffer,\n"
-            "    which would fold the previous layer's values into the residual and\n"
-            "    produce plausible-looking but meaningless output.\n"
-            "    Shorten the prompt, lower --gen, or drop --incremental.\n",
+            "k3: КРИТИЧЕСКАЯ ОШИБКА, %s равен %ld, что превышает лимит %ld.\n"
+            "    Прерывание вместо возврата без записи выходного буфера,\n"
+            "    что свернуло бы значения предыдущего слоя в residual и\n"
+            "    породило бы правдоподобный, но бессмысленный вывод.\n"
+            "    Сократите промпт, уменьшите --gen или уберите --incremental.\n",
             what, value, limit);
     abort();
 }
@@ -621,8 +621,8 @@ void k3_moe(float *out, const float *x, const K3MoeW *w, const K3Cfg *c,
                      * it in k3_expert_drops so the caller fails the run (see docs/API.md). */
                     if (w->cache_only) continue;
                     k3_expert_drops++;
-                    fprintf(stderr, "EXPERT DROP: layer %d expert %d failed to load; "
-                                    "this token is CORRUPT\n", w->layer, idx[j]);
+                    fprintf(stderr, "ПОТЕРЯ ЭКСПЕРТА: слой %d эксперт %d не удалось загрузить; "
+                                    "этот токен ПОВРЕЖДЁН\n", w->layer, idx[j]);
                     continue;
                 }
                 k3_matmul_mxfp4(gu,     z, q.p1, q.s1, L, I, K3_MXFP4_GROUP);
@@ -759,8 +759,8 @@ static void moe_prefill_chunk(float *out, const float *x, const K3MoeW *w,
         K3ExpertQ q;
         if (w->src->get(w->src, w->layer, e, &q) != 0) {
             k3_expert_drops++;
-            fprintf(stderr, "EXPERT DROP: layer %d expert %d failed to load; "
-                            "this chunk is CORRUPT\n", w->layer, e);
+            fprintf(stderr, "ПОТЕРЯ ЭКСПЕРТА: слой %d эксперт %d не удалось загрузить; "
+                            "этот чанк ПОВРЕЖДЁН\n", w->layer, e);
             /* contrib is malloc'd, not calloc'd. The per-token path (k3_moe,
              * above) starts its accumulator at zero and simply never adds a
              * dropped expert's contribution, which is a correct zero. This
@@ -1382,20 +1382,20 @@ void k3_matmul_mxfp4(float *y, const float *x, const unsigned char *packed,
 {
     if (in & 1) {
         fprintf(stderr,
-                "k3: FATAL, k3_matmul_mxfp4 called with in=%d, which is odd.\n"
-                "    Packed rows are in/2 bytes, two elements per byte; an odd `in`\n"
-                "    truncates that stride below what the trailing group's odd\n"
-                "    remainder reads, a heap read past the caller's buffer instead\n"
-                "    of failing loudly.\n",
+                "k3: КРИТИЧЕСКАЯ ОШИБКА, k3_matmul_mxfp4 вызван с in=%d, что нечётно.\n"
+                "    Упакованные строки — in/2 байт, два элемента на байт; нечётный `in`\n"
+                "    усекает этот stride ниже того, что читает нечётный\n"
+                "    остаток хвостовой группы, — чтение кучи за буфером вызывающего вместо\n"
+                "    громкого отказа.\n",
                 in);
         abort();
     }
     if (group > 64) {
         fprintf(stderr,
-                "k3: FATAL, k3_matmul_mxfp4 called with group=%d, which exceeds 64.\n"
-                "    Each group is expanded into a fixed wf[64] stack buffer before\n"
-                "    the dot product; a larger group overflows it instead of failing\n"
-                "    loudly.\n",
+                "k3: КРИТИЧЕСКАЯ ОШИБКА, k3_matmul_mxfp4 вызван с group=%d, что превышает 64.\n"
+                "    Каждая группа разворачивается в фиксированный стековый буфер wf[64] перед\n"
+                "    скалярным произведением; большая группа переполнит его вместо громкого\n"
+                "    отказа.\n",
                 group);
         abort();
     }

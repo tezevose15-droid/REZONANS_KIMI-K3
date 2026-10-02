@@ -43,7 +43,7 @@ typedef struct {
 static void req_(Plan *p, const void **dest, int narrow, int64_t want, int64_t take,
                  const char *fmt, va_list ap)
 {
-    if (p->n >= MAXB) { fprintf(stderr, "k3_bind: too many tensors\n"); p->bad++; return; }
+    if (p->n >= MAXB) { fprintf(stderr, "k3_bind: слишком много тензоров\n"); p->bad++; return; }
     Req *q = &p->r[p->n];
     vsnprintf(q->name, sizeof q->name, fmt, ap);
     q->dest = dest; q->want = want; q->take = take < 0 ? want : take;
@@ -79,7 +79,7 @@ static int64_t plan_resolve(Plan *p, const K3St *s)
         Req *q = &p->r[i];
         q->t = k3_st_find(s, q->name);
         if (!q->t) {
-            fprintf(stderr, "k3_bind: missing tensor %s\n", q->name);
+            fprintf(stderr, "k3_bind: отсутствует тензор %s\n", q->name);
             k3_st_note_missing(s, q->name);   /* names the file, once per open */
             p->bad++;
             continue;
@@ -89,13 +89,13 @@ static int64_t plan_resolve(Plan *p, const K3St *s)
          * config and the checkpoint disagree, and every kernel downstream would read
          * the wrong strides while producing plausible numbers. */
         if (q->want >= 0 && have != q->want) {
-            fprintf(stderr, "k3_bind: %s has %lld elements, engine expects %lld\n",
+            fprintf(stderr, "k3_bind: %s имеет %lld элементов, движок ожидает %lld\n",
                     q->name, (long long)have, (long long)q->want);
             p->bad++;
             continue;
         }
         if (q->take > have) {
-            fprintf(stderr, "k3_bind: %s: asked for %lld of %lld elements\n",
+            fprintf(stderr, "k3_bind: %s: запрошено %lld из %lld элементов\n",
                     q->name, (long long)q->take, (long long)have);
             p->bad++;
             continue;
@@ -141,12 +141,12 @@ static int plan_load(Plan *p, const K3St *s, unsigned char *blob)
         if (q->narrow) {
             /* Straight bytes, no conversion: this is the whole point. */
             if (k3_st_read(s, q->t, dst) != q->t->nbytes) {
-                fprintf(stderr, "k3_bind: short read of %s\n", q->name);
+                fprintf(stderr, "k3_bind: короткое чтение %s\n", q->name);
                 return -1;
             }
         } else if (q->take == have) {
             if (k3_st_read_f32(s, q->t, (float *)dst) != have) {
-                fprintf(stderr, "k3_bind: short read of %s\n", q->name);
+                fprintf(stderr, "k3_bind: короткое чтение %s\n", q->name);
                 return -1;
             }
         } else {
@@ -267,7 +267,7 @@ int k3_bind_layer(const K3St *s, const K3Cfg *c, int L, K3LayerBind *b)
     /* If any large matrix is not BF16, redo the whole layer at fp32.
      * The tag is per struct, so a mixed layer cannot be described. */
     if (p.demoted) {
-        fprintf(stderr, "k3_bind: layer %d has %d large tensor(s) that are not BF16; "
+        fprintf(stderr, "k3_bind: слой %d имеет %d больших тензора(ов), которые не BF16; "
                         "binding the whole layer at fp32 instead\n", L, p.demoted);
         memset(b, 0, sizeof *b);
         b->layer = L;
@@ -281,7 +281,7 @@ int k3_bind_layer(const K3St *s, const K3Cfg *c, int L, K3LayerBind *b)
 
     b->blob = malloc((size_t)need);
     if (!b->blob) {
-        fprintf(stderr, "k3_bind: cannot allocate %.2f GB for layer %d\n",
+        fprintf(stderr, "k3_bind: не могу выделить %.2f ГБ для слоя %d\n",
                 (double)need / 1e9, L);
         return -1;
     }
@@ -341,7 +341,7 @@ int k3_bind_layer_mem(const K3Cfg *c, int L, K3LayerBind *b,
         Req *q = &p.r[i];
         int64_t off = 0, nb = 0; int dt = 0;
         if (src->find(src->ctx, q->name, &off, &nb, &dt) != 0) {
-            fprintf(stderr, "k3_bind_mem: %s not present in the packed run\n", q->name);
+            fprintf(stderr, "k3_bind_mem: %s отсутствует в упакованном run\n", q->name);
             return -1;
         }
         /* Per-row int8 draft weight: [f32 scale][int8 * cols] per row. A matmul weight is
@@ -367,13 +367,13 @@ int k3_bind_layer_mem(const K3Cfg *c, int L, K3LayerBind *b,
             }
             const int64_t rows = (nb - take) / 4;
             if (rows <= 0 || take % rows != 0) {
-                fprintf(stderr, "k3_bind_mem: %s bad int8 shape\n", q->name);
+                fprintf(stderr, "k3_bind_mem: %s плохая int8-форма\n", q->name);
                 return -1;
             }
             const int64_t cols = take / rows;
             w = (w + 7u) & ~(size_t)7u;
             if (w + (size_t)take * 4 > widen_cap) {
-                fprintf(stderr, "k3_bind_mem: widen area too small at %s\n", q->name);
+                fprintf(stderr, "k3_bind_mem: область widen слишком мала в %s\n", q->name);
                 return -1;
             }
             float *dst = (float *)(widen + w);
@@ -393,12 +393,12 @@ int k3_bind_layer_mem(const K3Cfg *c, int L, K3LayerBind *b,
         const int esz = (dt == K3_DT_F32) ? 4 : (dt == K3_DT_U8 ? 1 : 2);
         const int64_t have = nb / esz;
         if (q->want >= 0 && have != q->want) {
-            fprintf(stderr, "k3_bind_mem: %s has %lld elements, engine expects %lld\n",
+            fprintf(stderr, "k3_bind_mem: %s имеет %lld элементов, ожидается %lld\n",
                     q->name, (long long)have, (long long)q->want);
             return -1;
         }
         if (q->take > have) {
-            fprintf(stderr, "k3_bind_mem: %s: asked for %lld of %lld\n",
+            fprintf(stderr, "k3_bind_mem: %s: запрошено %lld из %lld\n",
                     q->name, (long long)q->take, (long long)have);
             return -1;
         }
@@ -413,12 +413,12 @@ int k3_bind_layer_mem(const K3Cfg *c, int L, K3LayerBind *b,
         if (dt == K3_DT_F32) { *q->dest = run + off; continue; }
 
         if (dt != K3_DT_BF16) {
-            fprintf(stderr, "k3_bind_mem: %s has dtype %d, cannot widen\n", q->name, dt);
+            fprintf(stderr, "k3_bind_mem: %s имеет dtype %d, нельзя расширить\n", q->name, dt);
             return -1;
         }
         w = (w + 7u) & ~(size_t)7u;
         if (w + (size_t)q->take * 4 > widen_cap) {
-            fprintf(stderr, "k3_bind_mem: widen area too small at %s (%zu of %zu)\n",
+            fprintf(stderr, "k3_bind_mem: область widen слишком мала в %s (%zu of %zu)\n",
                     q->name, w + (size_t)q->take * 4, widen_cap);
             return -1;
         }
@@ -432,7 +432,7 @@ int k3_bind_layer_mem(const K3Cfg *c, int L, K3LayerBind *b,
     if (!narrowed_all && !i8_seen) {
         /* A large matrix was not BF16 in the packed run. The tag is per struct, so this
          * cannot be described; refuse rather than read fp32 bytes as bf16. */
-        fprintf(stderr, "k3_bind_mem: layer %d has a non-BF16 large tensor\n", L);
+        fprintf(stderr, "k3_bind_mem: слой %d имеет не-BF16 большой тензор\n", L);
         return -1;
     }
 
@@ -476,7 +476,7 @@ int k3_bind_model_parts(const K3St *s, const K3Cfg *c,
     int64_t need = plan_resolve(&p, s);
     if (need < 0) return -1;
     if (p.demoted) {                       /* same wholesale fallback as k3_bind_layer */
-        fprintf(stderr, "k3_bind: %d model-level tensor(s) are not BF16; binding the "
+        fprintf(stderr, "k3_bind: %d тензор(ов) уровня модели не BF16; привязка "
                         "model-level weights at fp32 instead\n", p.demoted);
         memset(m, 0, sizeof *m);
         memset(&p, 0, sizeof p);
@@ -487,7 +487,7 @@ int k3_bind_model_parts(const K3St *s, const K3Cfg *c,
     }
     m->blob = malloc((size_t)need);
     if (!m->blob) {
-        fprintf(stderr, "k3_bind: cannot allocate %.2f GB for model-level weights\n",
+        fprintf(stderr, "k3_bind: не могу выделить %.2f ГБ для весов уровня модели\n",
                 (double)need / 1e9);
         return -1;
     }
@@ -517,7 +517,7 @@ static int model_matrix(const K3St *s, const char *name, int rows, int cols,
 {
     const K3Tensor *t = k3_st_find(s, name);
     if (!t) {
-        fprintf(stderr, "k3_model_stream: missing tensor %s\n", name);
+        fprintf(stderr, "k3_model_stream: отсутствует тензор %s\n", name);
         k3_st_note_missing(s, name);
         return -1;
     }
@@ -531,7 +531,7 @@ static int model_matrix(const K3St *s, const char *name, int rows, int cols,
     if (t->dtype == K3_DT_BF16) *wdt = K3_WBF16;
     else if (t->dtype == K3_DT_F32) *wdt = K3_WF32;
     else {
-        fprintf(stderr, "k3_model_stream: %s must be BF16 or F32, got dtype %d\n",
+        fprintf(stderr, "k3_model_stream: %s должен быть BF16 или F32, получен dtype %d\n",
                 name, (int)t->dtype);
         return -1;
     }
@@ -560,7 +560,7 @@ int k3_model_stream_init(K3ModelStream *m, const K3St *s, const K3Cfg *c)
 
     m->bufcap = K3_MODEL_STREAM_CHUNK + 2u * K3_ST_ALIGN;
     if (posix_memalign((void **)&m->buf, K3_ST_ALIGN, m->bufcap) != 0) {
-        fprintf(stderr, "k3_model_stream: cannot allocate %zu-byte aligned I/O buffer\n",
+        fprintf(stderr, "k3_model_stream: не могу выделить выровненный I/O-буфер %zu байт\n",
                 m->bufcap);
         memset(m, 0, sizeof *m);
         return -1;

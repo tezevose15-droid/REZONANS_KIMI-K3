@@ -74,14 +74,14 @@ static int admit(K3Cache *c, int layer, int expert)
     K3ExpertRef r;
     if (k3_expert_ref(c->st, layer, expert, &r) != 0) return -1;
     if (r.nbytes > c->slot_bytes) {
-        fprintf(stderr, "k3_cache: L%d expert %d is %lld bytes, slot holds %lld\n",
+        fprintf(stderr, "k3_cache: L%d эксперт %d — %lld байт, слот вмещает %lld\n",
                 layer, expert, (long long)r.nbytes, (long long)c->slot_bytes);
         return -1;
     }
 
     slot = pick_victim(c);
     if (slot < 0) {
-        fprintf(stderr, "k3_cache: every slot is pinned, cannot admit L%d expert %d\n",
+        fprintf(stderr, "k3_cache: все слоты закреплены, нельзя принять L%d эксперта %d\n",
                 layer, expert);
         return -1;
     }
@@ -94,7 +94,7 @@ static int admit(K3Cache *c, int layer, int expert)
                             c->slot_bytes, &pad);
     c->load_seconds += now_s() - t0;
     if (got != r.nbytes) {
-        fprintf(stderr, "k3_cache: short load of L%d expert %d (%lld of %lld)\n",
+        fprintf(stderr, "k3_cache: короткая загрузка L%d эксперта %d (%lld из %lld)\n",
                 layer, expert, (long long)got, (long long)r.nbytes);
         c->key_of[slot] = -1;
         return -1;
@@ -317,7 +317,7 @@ static int cache_getmany(K3ExpertSrc *self, int layer, const int *ids, int n)
     int ok = 0;
     for (int i = 0; i < nw; i++) {
         if (w[i].got != w[i].r.nbytes) {
-            fprintf(stderr, "k3_cache: short prefetch of L%d expert %d (%lld of %lld); "
+            fprintf(stderr, "k3_cache: короткий prefetch L%d эксперта %d (%lld из %lld); "
                             "leaving the slot empty so it cannot be served as a hit\n",
                     layer, w[i].expert, (long long)w[i].got, (long long)w[i].r.nbytes);
             c->key_of[w[i].slot] = K3_SLOT_EMPTY;       /* release the reservation */
@@ -355,7 +355,7 @@ static int cache_get(K3ExpertSrc *self, int layer, int expert, K3ExpertQ *out)
 {
     K3Cache *c = (K3Cache *)self;          /* src is the first member, by contract */
     if (layer < 0 || layer >= c->n_layers || expert < 0 || expert >= c->n_experts) {
-        fprintf(stderr, "k3_cache: out of range L%d expert %d\n", layer, expert);
+        fprintf(stderr, "k3_cache: вне диапазона L%d эксперт %d\n", layer, expert);
         return -1;
     }
     c->hist[layer * c->n_experts + expert]++;
@@ -390,7 +390,7 @@ int k3_cache_init(K3Cache *c, const K3St *st, const K3Cfg *cfg, int64_t budget_b
      * compiler, the layout, or the weather. */
     c->src.getmany = getenv("K3_NOPREFETCH") ? NULL : cache_getmany;
     if (!c->src.getmany)
-        fprintf(stderr, "k3_cache: batch prefetch DISABLED by K3_NOPREFETCH\n");
+        fprintf(stderr, "k3_cache: пакетный prefetch ОТКЛЮЧЁН переменной K3_NOPREFETCH\n");
     c->src.ctx = c;
     c->st = st;
     c->n_layers = cfg->n_layers;
@@ -404,7 +404,7 @@ int k3_cache_init(K3Cache *c, const K3St *st, const K3Cfg *cfg, int64_t budget_b
         if (k3_is_dense(cfg, L)) continue;
         if (k3_expert_ref(st, L, 0, &probe) == 0) found = 1;
     }
-    if (!found) { fprintf(stderr, "k3_cache: no routed experts in this shard set\n"); return -1; }
+    if (!found) { fprintf(stderr, "k3_cache: в этом наборе шардов нет маршрутизируемых экспертов\n"); return -1; }
     /* Room for an O_DIRECT read widened outward to 4096 boundaries at both ends. */
     /* Round the SLOT STRIDE up to the O_DIRECT alignment, not just the arena base.
      *
@@ -442,7 +442,7 @@ int k3_cache_init(K3Cache *c, const K3St *st, const K3Cfg *cfg, int64_t budget_b
         size_t want = (size_t)c->nslot * c->slot_bytes;
         if (huge) want = (want + al - 1) & ~(al - 1);
         if (posix_memalign((void **)&c->arena, al, want) != 0) {
-            fprintf(stderr, "k3_cache: cannot allocate %.2f GB arena\n", (double)want / 1e9);
+            fprintf(stderr, "k3_cache: не могу выделить арену %.2f ГБ\n", (double)want / 1e9);
             return -1;
         }
 #if defined(MADV_HUGEPAGE)
@@ -450,7 +450,7 @@ int k3_cache_init(K3Cache *c, const K3St *st, const K3Cfg *cfg, int64_t budget_b
 #endif
     }
     if (0) {
-        fprintf(stderr, "k3_cache: cannot allocate %.2f GB arena\n",
+        fprintf(stderr, "k3_cache: не могу выделить арену %.2f ГБ\n",
                 (double)c->nslot * c->slot_bytes / 1e9);
         return -1;
     }
@@ -486,7 +486,7 @@ int k3_cache_dump_trace(const K3Cache *c, const char *path)
     if (!f) return -1;
     const size_t n = fwrite(c->trace, sizeof(int32_t), (size_t)c->ntrace, f);
     fclose(f);
-    printf("wrote %s: %lld requests (%.1f KB)\n",
+    printf("записан %s: %lld запросов (%.1f КБ)\n",
            path, (long long)(c->ntrace / 2), (double)c->ntrace * 4 / 1024.0);
     return n == (size_t)c->ntrace ? 0 : -1;
 }
@@ -524,11 +524,11 @@ void k3_cache_report(const K3Cache *c, const char *label)
     const uint64_t n = c->hits + c->misses;
     int resident = 0, pinned = 0;
     for (int i = 0; i < c->nslot; i++) { if (c->key_of[i] >= 0) resident++; if (c->pinned[i]) pinned++; }
-    printf("cache [%s]\n", label ? label : "");
-    printf("  slots        : %d of %.2f MB = %.2f GB arena (%d resident, %d pinned)\n",
+    printf("кэш [%s]\n", label ? label : "");
+    printf("  слоты       : %d по %.2f МБ = %.2f ГБ арены (%d резидентных, %d закреплённых)\n",
            c->nslot, (double)c->slot_bytes / 1e6,
            (double)c->nslot * c->slot_bytes / 1e9, resident, pinned);
-    printf("  requests     : %llu  hits %llu (%.2f%%)  misses %llu  evictions %llu\n",
+    printf("  запросы     : %llu  попаданий %llu (%.2f%%)  промахов %llu  вытеснений %llu\n",
            (unsigned long long)n, (unsigned long long)c->hits,
            n ? 100.0 * c->hits / n : 0.0,
            (unsigned long long)c->misses, (unsigned long long)c->evictions);
@@ -538,11 +538,11 @@ void k3_cache_report(const K3Cache *c, const char *label)
     if (c->prefetch_reads) {
         const unsigned long long served = (c->hits > c->prefetch_reads)
                                         ? c->hits - c->prefetch_reads : 0;
-        printf("  of those hits : %llu came from the batch prefetch, i.e. read from disk\n"
+        printf("  из попаданий: %llu пришли из пакетного prefetch, т.е. прочитаны с диска\n"
                "                  this token; TRUE resident hit rate %.2f%%\n",
                (unsigned long long)c->prefetch_reads, n ? 100.0 * served / n : 0.0);
     }
-    printf("  read from disk: %.2f GB in %.2f s (%.0f MB/s while loading)\n",
+    printf("  прочитано с диска: %.2f ГБ за %.2f с (%.0f МБ/с при загрузке)\n",
            (double)c->bytes_read / 1e9, c->load_seconds,
            c->load_seconds > 0 ? (double)c->bytes_read / 1e6 / c->load_seconds : 0.0);
 }

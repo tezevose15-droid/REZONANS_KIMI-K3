@@ -24,21 +24,21 @@ int k3_expert_ref(const K3St *s, int layer, int expert, K3ExpertRef *r)
     for (int i = 0; i < 3; i++) {
         snprintf(name, sizeof name, EXPERT_FMT, layer, expert, W[i], "weight_packed");
         pk[i] = k3_st_find(s, name);
-        if (!pk[i]) { fprintf(stderr, "k3_load: missing %s\n", name); k3_st_note_missing(s, name); return -1; }
+        if (!pk[i]) { fprintf(stderr, "k3_load: отсутствует %s\n", name); k3_st_note_missing(s, name); return -1; }
         snprintf(name, sizeof name, EXPERT_FMT, layer, expert, W[i], "weight_scale");
         sc[i] = k3_st_find(s, name);
-        if (!sc[i]) { fprintf(stderr, "k3_load: missing %s\n", name); k3_st_note_missing(s, name); return -1; }
+        if (!sc[i]) { fprintf(stderr, "k3_load: отсутствует %s\n", name); k3_st_note_missing(s, name); return -1; }
 
         if (pk[i]->dtype != K3_DT_U8 || sc[i]->dtype != K3_DT_U8) {
-            fprintf(stderr, "k3_load: L%d expert %d %s is not U8\n", layer, expert, W[i]);
+            fprintf(stderr, "k3_load: L%d эксперт %d %s не U8\n", layer, expert, W[i]);
             return -1;
         }
         if (pk[i]->ndim != 2 || sc[i]->ndim != 2) {
-            fprintf(stderr, "k3_load: L%d expert %d %s is not 2D\n", layer, expert, W[i]);
+            fprintf(stderr, "k3_load: L%d эксперт %d %s не 2D\n", layer, expert, W[i]);
             return -1;
         }
         if (pk[i]->shape[0] != sc[i]->shape[0]) {
-            fprintf(stderr, "k3_load: L%d expert %d %s row mismatch %lld vs %lld\n",
+            fprintf(stderr, "k3_load: L%d эксперт %d %s несовпадение строк %lld vs %lld\n",
                     layer, expert, W[i],
                     (long long)pk[i]->shape[0], (long long)sc[i]->shape[0]);
             return -1;
@@ -48,19 +48,19 @@ int k3_expert_ref(const K3St *s, int layer, int expert, K3ExpertRef *r)
          * first would be applied to the wrong 32 weights. Silent, and catastrophic. */
         const int64_t logical = pk[i]->shape[1] * 2;
         if (sc[i]->shape[1] * K3_MXFP4_GROUP != logical) {
-            fprintf(stderr, "k3_load: L%d expert %d %s: %lld scales for %lld elements "
+            fprintf(stderr, "k3_load: L%d эксперт %d %s: %lld scale на %lld элементов "
                             "implies group size %.2f, not %d\n",
                     layer, expert, W[i], (long long)sc[i]->shape[1], (long long)logical,
                     (double)logical / (double)sc[i]->shape[1], K3_MXFP4_GROUP);
             return -1;
         }
         if (pk[i]->shard != sc[i]->shard) {
-            fprintf(stderr, "k3_load: L%d expert %d %s is split across shards\n",
+            fprintf(stderr, "k3_load: L%d эксперт %d %s разбит между шардами\n",
                     layer, expert, W[i]);
             return -1;
         }
         if (i && pk[i]->shard != pk[0]->shard) {
-            fprintf(stderr, "k3_load: L%d expert %d spans shards\n", layer, expert);
+            fprintf(stderr, "k3_load: L%d эксперт %d охватывает шарды\n", layer, expert);
             return -1;
         }
 

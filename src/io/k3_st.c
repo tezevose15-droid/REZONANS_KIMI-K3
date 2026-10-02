@@ -275,7 +275,7 @@ static int sweep_spans(const K3St *s, const Build *b, size_t first_idx, int64_t 
     const size_t n = b->n - first_idx;
     if (n == 0) return 0;
     Span *sp = (Span *)malloc(n * sizeof *sp);
-    if (!sp) { fprintf(stderr, "k3_st: out of memory\n"); return -1; }
+    if (!sp) { fprintf(stderr, "k3_st: нехватка памяти\n"); return -1; }
     for (size_t i = 0; i < n; i++) {
         const K3Tensor *t = &b->t[first_idx + i];
         sp[i].o0 = t->off - base;
@@ -289,13 +289,13 @@ static int sweep_spans(const K3St *s, const Build *b, size_t first_idx, int64_t 
         const char *nm = s->strpool + b->noff[sp[i].idx];
         if (sp[i].o0 < cursor) {
             const char *pm = s->strpool + b->noff[sp[prev].idx];
-            fprintf(stderr, "k3_st: %s: %s [%lld,%lld) overlaps %s [%lld,%lld)\n",
+            fprintf(stderr, "k3_st: %s: %s [%lld,%lld) перекрывает %s [%lld,%lld)\n",
                     path, nm, (long long)sp[i].o0, (long long)sp[i].o1,
                     pm, (long long)sp[prev].o0, (long long)sp[prev].o1);
             free(sp); return -1;
         }
         if (sp[i].o0 > cursor) {
-            fprintf(stderr, "k3_st: %s: %lld bytes at offset %lld belong to no tensor "
+            fprintf(stderr, "k3_st: %s: %lld байт по смещению %lld не принадлежат ни одному тензору "
                             "(gap before %s)\n",
                     path, (long long)(sp[i].o0 - cursor), (long long)cursor, nm);
             free(sp); return -1;
@@ -311,11 +311,11 @@ static int sweep_spans(const K3St *s, const Build *b, size_t first_idx, int64_t 
 static int scan_shard(K3St *s, Build *b, int shard, const char *path)
 {
     int fd = open(path, O_RDONLY);
-    if (fd < 0) { fprintf(stderr, "k3_st: cannot open %s\n", path); return -1; }
+    if (fd < 0) { fprintf(stderr, "k3_st: не могу открыть %s\n", path); return -1; }
 
     unsigned char lenbuf[8];
     if (pread(fd, lenbuf, 8, 0) != 8) {
-        fprintf(stderr, "k3_st: %s is too short for a header length\n", path);
+        fprintf(stderr, "k3_st: %s слишком короткий для длины заголовка\n", path);
         close(fd); return -1;
     }
     uint64_t hlen = 0;
@@ -328,7 +328,7 @@ static int scan_shard(K3St *s, Build *b, int shard, const char *path)
      * turns into an abort. fsize >= 8 holds here (8 bytes were just read), so
      * fsize - 8 cannot underflow. Found by tests/unit/test_st_faults.c. */
     if (hlen == 0 || (uint64_t)(fsize - 8) < hlen) {
-        fprintf(stderr, "k3_st: %s header length %llu is impossible (file %lld bytes)\n",
+        fprintf(stderr, "k3_st: длина заголовка %s %llu невозможна (файл %lld байт)\n",
                 path, (unsigned long long)hlen, (long long)fsize);
         close(fd); return -1;
     }
@@ -342,7 +342,7 @@ static int scan_shard(K3St *s, Build *b, int shard, const char *path)
         got += r;
     }
     if ((uint64_t)got != hlen) {
-        fprintf(stderr, "k3_st: short read of %s header\n", path);
+        fprintf(stderr, "k3_st: короткое чтение заголовка %s\n", path);
         free(json); close(fd); return -1;
     }
     json[hlen] = '\0';
@@ -351,7 +351,7 @@ static int scan_shard(K3St *s, Build *b, int shard, const char *path)
 
     Scan sc = { json, json + hlen };
     if (!lit(&sc, '{')) {
-        fprintf(stderr, "k3_st: %s header is not a JSON object\n", path); goto bad;
+        fprintf(stderr, "k3_st: заголовок %s не является JSON-объектом\n", path); goto bad;
     }
 
     static char name[512];
@@ -361,21 +361,21 @@ static int scan_shard(K3St *s, Build *b, int shard, const char *path)
     for (;;) {
         ws(&sc);
         if (sc.p < sc.end && *sc.p == '}') { sc.p++; break; }
-        if (!first && !lit(&sc, ',')) { fprintf(stderr, "k3_st: %s expected ','\n", path); goto bad; }
+        if (!first && !lit(&sc, ',')) { fprintf(stderr, "k3_st: %s ожидалась ','\n", path); goto bad; }
         first = 0;
         ws(&sc);
         if (sc.p < sc.end && *sc.p == '}') { sc.p++; break; }   /* trailing comma */
 
         size_t nlen = 0;
         if (!str_(&sc, name, sizeof name, &nlen)) {
-            fprintf(stderr, "k3_st: %s bad tensor name near byte %ld\n",
+            fprintf(stderr, "k3_st: %s плохое имя тензора около байта %ld\n",
                     path, (long)(sc.p - json)); goto bad;
         }
-        if (!lit(&sc, ':')) { fprintf(stderr, "k3_st: %s expected ':'\n", path); goto bad; }
+        if (!lit(&sc, ':')) { fprintf(stderr, "k3_st: %s ожидалось ':'\n", path); goto bad; }
 
         if (!strcmp(name, "__metadata__")) { if (!skip_value(&sc)) goto bad; continue; }
 
-        if (!lit(&sc, '{')) { fprintf(stderr, "k3_st: %s entry is not an object\n", path); goto bad; }
+        if (!lit(&sc, '{')) { fprintf(stderr, "k3_st: запись %s не является объектом\n", path); goto bad; }
 
         K3Tensor t; memset(&t, 0, sizeof t);
         t.shard = shard;
@@ -397,7 +397,7 @@ static int scan_shard(K3St *s, Build *b, int shard, const char *path)
                 if (!str_(&sc, dv, sizeof dv, &dl)) goto bad;
                 t.dtype = dtype_of(dv, dl);
                 if (t.dtype == K3_DT_UNKNOWN) {
-                    fprintf(stderr, "k3_st: %s: unsupported dtype '%s' on %s\n", path, dv, name);
+                    fprintf(stderr, "k3_st: %s: неподдерживаемый dtype '%s' на %s\n", path, dv, name);
                     goto bad;
                 }
                 have_dt = 1;
@@ -409,7 +409,7 @@ static int scan_shard(K3St *s, Build *b, int shard, const char *path)
                     int64_t d;
                     if (!i64_(&sc, &d)) goto bad;
                     if (t.ndim < 4) t.shape[t.ndim] = d;
-                    else { fprintf(stderr, "k3_st: %s has rank > 4\n", name); goto bad; }
+                    else { fprintf(stderr, "k3_st: %s имеет ранг > 4\n", name); goto bad; }
                     t.ndim++;
                     ws(&sc);
                     if (lit(&sc, ',')) continue;
@@ -429,7 +429,7 @@ static int scan_shard(K3St *s, Build *b, int shard, const char *path)
         }
 
         if (!have_dt || !have_off) {
-            fprintf(stderr, "k3_st: %s: %s is missing dtype or data_offsets\n", path, name);
+            fprintf(stderr, "k3_st: %s: у %s отсутствуют dtype или data_offsets\n", path, name);
             goto bad;
         }
 
@@ -443,7 +443,7 @@ static int scan_shard(K3St *s, Build *b, int shard, const char *path)
          * (fsize - base cannot underflow: base <= fsize was verified at
          * the header check above.) */
         if (o0 < 0 || o1 < o0 || o1 > fsize - base) {
-            fprintf(stderr, "k3_st: %s: %s has impossible data_offsets\n", path, name);
+            fprintf(stderr, "k3_st: %s: у %s невозможные data_offsets\n", path, name);
             goto bad;
         }
         t.off    = base + o0;
@@ -453,18 +453,18 @@ static int scan_shard(K3St *s, Build *b, int shard, const char *path)
         const int64_t numel = k3_st_numel(&t);
         const int64_t esz = k3_st_elemsize(t.dtype);
         if (esz <= 0 || numel > INT64_MAX / esz) {
-            fprintf(stderr, "k3_st: %s: %s shape is impossibly large\n", path, name);
+            fprintf(stderr, "k3_st: %s: форма %s неправдоподобно велика\n", path, name);
             goto bad;
         }
         const int64_t want = numel * esz;
         if (t.nbytes != want) {
-            fprintf(stderr, "k3_st: %s: %s spans %lld bytes but shape implies %lld\n",
+            fprintf(stderr, "k3_st: %s: %s занимает %lld байт, но форма подразумевает %lld\n",
                     path, name, (long long)t.nbytes, (long long)want);
             goto bad;
         }
         if (o1 > maxend) maxend = o1;
 
-        if (push(b, s, name, nlen, &t) != 0) { fprintf(stderr, "k3_st: out of memory\n"); goto bad; }
+        if (push(b, s, name, nlen, &t) != 0) { fprintf(stderr, "k3_st: нехватка памяти\n"); goto bad; }
         ntensor++;
     }
 
@@ -478,7 +478,7 @@ static int scan_shard(K3St *s, Build *b, int shard, const char *path)
     if (sweep_spans(s, b, first_idx, base, path) != 0) goto bad;
 
     if (base + maxend != fsize)
-        fprintf(stderr, "k3_st: note: %s has %lld trailing bytes after the last tensor\n",
+        fprintf(stderr, "k3_st: примечание: %s имеет %lld хвостовых байт после последнего тензора\n",
                 path, (long long)(fsize - base - maxend));
 
     free(json);
@@ -509,7 +509,7 @@ int k3_st_open(K3St *s, const char *dir)
     memset(s, 0, sizeof *s);
 
     DIR *d = opendir(dir);
-    if (!d) { fprintf(stderr, "k3_st: cannot open directory %s\n", dir); return -1; }
+    if (!d) { fprintf(stderr, "k3_st: не могу открыть каталог %s\n", dir); return -1; }
 
     char **files = NULL; int nf = 0, cf = 0;
     struct dirent *e;
@@ -520,7 +520,7 @@ int k3_st_open(K3St *s, const char *dir)
             cf = cf ? cf * 2 : 32;
             char **nfiles = (char **)realloc(files, (size_t)cf * sizeof *files);
             if (!nfiles) {
-                fprintf(stderr, "k3_st: OOM listing %s\n", dir);
+                fprintf(stderr, "k3_st: OOM при листинге %s\n", dir);
                 for (int k = 0; k < nf; k++) free(files[k]);
                 free(files); closedir(d);
                 return -1;
@@ -530,7 +530,7 @@ int k3_st_open(K3St *s, const char *dir)
         size_t len = strlen(dir) + 1 + n + 1;
         files[nf] = (char *)malloc(len);
         if (!files[nf]) {
-            fprintf(stderr, "k3_st: OOM listing %s\n", dir);
+            fprintf(stderr, "k3_st: OOM при листинге %s\n", dir);
             for (int k = 0; k < nf; k++) free(files[k]);
             free(files); closedir(d);
             return -1;
@@ -540,7 +540,7 @@ int k3_st_open(K3St *s, const char *dir)
     }
     closedir(d);
 
-    if (nf == 0) { fprintf(stderr, "k3_st: no .safetensors files in %s\n", dir); free(files); return -1; }
+    if (nf == 0) { fprintf(stderr, "k3_st: нет файлов .safetensors в %s\n", dir); free(files); return -1; }
     /* Sort so shard indices are stable across runs and machines; readdir order is not. */
     qsort(files, nf, sizeof *files, cmp_str);
 
@@ -587,7 +587,7 @@ int k3_st_open(K3St *s, const char *dir)
             }
             gaps++;
         }
-        fprintf(stderr, "k3_st: note: the shard filenames in %s declare %d shards but only "
+        fprintf(stderr, "k3_st: примечание: имена шардов в %s объявляют %d шардов, но только "
                         "%d are here; %d missing, the first is %s\n",
                 dir, s->declared, s->numbered, gaps, first);
     }
@@ -618,7 +618,7 @@ int k3_st_open(K3St *s, const char *dir)
         int j = (int)(h & (uint64_t)(nb - 1));
         while (s->bucket[j] >= 0) {
             if (!strcmp(s->t[s->bucket[j]].name, s->t[i].name)) {
-                fprintf(stderr, "k3_st: duplicate tensor name %s\n", s->t[i].name);
+                fprintf(stderr, "k3_st: дублирующееся имя тензора %s\n", s->t[i].name);
                 k3_st_close(s); return -1;
             }
             j = (j + 1) & (nb - 1);
@@ -664,7 +664,7 @@ static void index_load(const K3St *s)
     free(txt);
     jval *map = ix->root ? json_get(ix->root, "weight_map") : NULL;
     if (!map || map->t != J_OBJ) {
-        fprintf(stderr, "k3_st: note: %s has no usable weight_map; ignoring it\n", path);
+        fprintf(stderr, "k3_st: примечание: %s не имеет usable weight_map; игнорируется\n", path);
         json_free_tree(ix->root); ix->root = NULL;
         return;
     }

@@ -1,77 +1,55 @@
-# Contributing
+# Участие в разработке
 
-Real fixes and features from outside the project are credited in
-[CONTRIBUTORS.md](CONTRIBUTORS.md).
+Реальные исправления и фичи извне проекта указываются в [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
-## Before anything
+## Прежде всего
 
 ```bash
 make -j && make test
 ```
 
-`make test` needs no model weights and must stay green. If it is red on `main`, that is
-the bug worth fixing first.
+`make test` не требует весов модели и должен оставаться зелёным. Если на `main` он красный — это баг, который стоит чинить первым.
 
-`tools/*.py` (fixture generation, reference conformance, cache replay) needs `numpy`,
-`torch`, and, for lint and the tokenizer parity check, `ruff` and `tiktoken`. Exact
-versions are pinned in `pyproject.toml`; install them however you normally manage Python
-dependencies, for example `pip install numpy==2.5.2 torch==2.13.0` and, for the dev
-group, `pip install ruff==0.16.3 tiktoken==0.13.0`.
+`tools/*.py` (генерация фикстур, сверка с эталоном, replay кэша) требует `numpy`, `torch` и, для линта и проверки паритета токенизатора, `ruff` и `tiktoken`. Точные версии зафиксированы в `pyproject.toml`; устанавливайте их как обычно управляете Python-зависимостями, например `pip install numpy==2.5.2 torch==2.13.0` и для dev-группы `pip install ruff==0.16.3 tiktoken==0.13.0`.
 
-## The standard this codebase holds itself to
+## Стандарт, которого придерживается кодовая база
 
-**A wrong answer that looks right is the worst failure mode here.** This engine can load
-the wrong architecture, stream a corrupt expert, or mis-tokenize a prompt and still emit
-fluent, plausible text. Nothing crashes. Several of the defensive checks in the code
-exist because that class of failure is invisible without them.
+**Неверный ответ, выглядящий правильным, — худший режим отказа здесь.** Этот движок может загрузить неверную архитектуру, застримить повреждённого эксперта или неверно токенизировать промпт и всё равно выдать связный, правдоподобный текст. Ничего не падает. Несколько защитных проверок в коде существуют, потому что этот класс отказа невидим без них.
 
-So:
+Поэтому:
 
-- **Fail loudly, never silently.** If a config field is missing, refuse, do not
-  substitute a default. If an expert fails to load, count it and make the run fail; do
-  not `continue` past it and produce a token that is missing part of its routed sum.
-- **A test that cannot fail is not a test.** Make fixtures adversarial: if a plausible
-  wrong implementation would still pass, change the input until it would not.
-- **Comments explain why, not what.** Anywhere a plausible-looking implementation would
-  be wrong, say so at that spot.
+- **Падайте громко, никогда не молча.** Если поле конфигурации отсутствует — откажитесь, не подставляйте значение по умолчанию. Если эксперт не загрузился — посчитайте это и завалите прогон; не делайте `continue` мимо него и не выдавайте токен, у которого отсутствует часть routed-суммы.
+- **Тест, который не может упасть, — не тест.** Делайте фикстуры состязательными: если правдоподобно неверная реализация всё равно пройдёт, меняйте вход, пока не перестанет.
+- **Комментарии объясняют почему, а не что.** Везде, где правдоподобная реализация была бы неверной, скажите об этом на месте.
 
-## Performance changes
+## Изменения производительности
 
-The measured run-to-run spread on an identical configuration is **33%**. A single-sample
-comparison proves nothing.
+Измеренный разброс от прогона к прогону на идентичной конфигурации — **33%**. Односемпловое сравнение ничего не доказывает.
 
-Report at least three runs per arm, and report all of them:
+Сообщайте минимум три прогона на вариант, и сообщайте все:
 
-| arm | run 1 | run 2 | run 3 | mean |
+| вариант | прогон 1 | прогон 2 | прогон 3 | среднее |
 |---|---|---|---|---|
 
-Where you can, measure **counts instead of seconds**, bytes read per token, cache
-evictions, pinned layers. They are immune to scheduling noise and make a much stronger
-claim. See [docs/BENCHMARKING.md](docs/BENCHMARKING.md).
+Где можете, измеряйте **счётчики вместо секунд** — байты на токен, вытеснения кэша, закреплённые слои. Они иммунны к шуму планировщика и дают гораздо более сильное утверждение. См. [docs/BENCHMARKING.md](docs/BENCHMARKING.md).
 
-## Style
+## Стиль
 
-- C99, 4-space indent, 90 columns. `make format` if you have clang-format.
-- Warnings are errors in CI. In particular `-Wpointer-arith` is deliberate: weight
-  pointers are `const void *`, and arithmetic on void strides by one byte under GCC
-  silently returning the wrong tensor.
-- Keep `-ffp-contract=off`. The op tests compare against a reference at a fixed
-  tolerance; letting the compiler fuse multiply-adds moves results past it.
+- C99, отступ 4 пробела, 90 столбцов. `make format`, если есть clang-format.
+- Предупреждения — ошибки в CI. В частности `-Wpointer-arith` намеренно: указатели весов — `const void *`, и арифметика на void шагает по одному байту под GCC, молча возвращая неверный тензор.
+- Сохраняйте `-ffp-contract=off`. Тесты операций сравнивают с эталоном при фиксированном допуске; разрешение компилятору сливать multiply-add сдвигает результаты за него.
 
-## Adding a kernel
+## Добавление ядра
 
-1. Generate a fixture with `tools/emit_fixtures.py`, including its tolerance.
-2. Add the case to `tests/unit/test_ops.c`.
-3. Verify against the reference implementation in `tools/k3_ref.py`.
-4. Check it still holds on a real layer: `make test-all SHARD_DIR=...`.
+1. Сгенерируйте фикстуру `tools/emit_fixtures.py`, включая её допуск.
+2. Добавьте кейс в `tests/unit/test_ops.c`.
+3. Сверьте с эталонной реализацией в `tools/k3_ref.py`.
+4. Проверьте, что держится на реальном слое: `make test-all SHARD_DIR=...`.
 
-## Commits and PRs
+## Коммиты и PR
 
-Present tense, imperative: `add chunked prefill`, not `added` or `adds`. Explain *why* in
-the body; the diff already shows what. Fill in the PR template's verification section;
-it is a checklist, not a formality.
+Настоящее время, повелительное наклонение: `add chunked prefill`, а не `added` или `adds`. Объясните *почему* в теле; diff уже показывает что. Заполните раздел верификации из шаблона PR; это чек-лист, а не формальность.
 
-## Scope
+## Область
 
-Read [docs/ROADMAP.md](docs/ROADMAP.md) first. It also lists what is deliberately *not*
-planned and why, which may save you writing something that will be declined.
+Сначала прочитайте [docs/ROADMAP.md](docs/ROADMAP.md). Там также перечислено, что намеренно *не* планируется и почему — это может сэкономить вам написание того, что будет отклонено.

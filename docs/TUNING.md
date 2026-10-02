@@ -1,158 +1,105 @@
-# Tuning
+# Тюнинг
 
-## The short version
+## Коротко
 
-1. Run `./scripts/k3-doctor.sh` and use the preset it names.
-2. If you tune by hand: **fill the trunk before you feed the expert cache.**
-3. Use `--incremental` unless you are validating against full recompute.
+1. Запустите `./scripts/k3-doctor.sh` и используйте названный им пресет.
+2. Если настраиваете вручную: **заполните trunk прежде чем кормить кэш экспертов.**
+3. Используйте `--incremental`, если только вы не валидируете против полного перевычисления.
 
-Everything below is why.
+Всё ниже — почему.
 
-## One decision matters more than the rest
+## Одно решение важнее остальных
 
-The engine splits your memory budget between two caches:
+Движок делит ваш бюджет памяти между двумя кэшами:
 
-- `--trunk-gb`, the ring buffer and pinned layers for the **dense trunk**
-- `--cache-gb`, the arena for **routed experts**
+- `--trunk-gb` — кольцевой буфер и закреплённые слои для **dense trunk**
+- `--cache-gb` — арена для **маршрутизируемых экспертов**
 
-These are not interchangeable, and the asymmetry is large.
+Они не взаимозаменяемы, и асимметрия велика.
 
-Per token the engine re-reads the **entire 108.81 GB trunk**, all 93 layers, in a fixed
-order, every single token. It reads only **~25.8 GB of routed experts**, because just 16
-of 896 are selected per layer.
+На токен движок перечитывает **весь trunk 108,81 ГБ**, все 93 слоя, в фиксированном порядке, каждый токен. Он читает лишь **~25,8 ГБ маршрутизируемых экспертов**, потому что только 16 из 896 выбираются на слой.
 
-So a gigabyte given to the trunk removes about **1.17 GB/token of guaranteed traffic**
-(one pinned layer, never read again). A gigabyte given to the expert cache removes,
-below roughly 36 GB of arena, **nothing measurable**.
+Поэтому гигабайт, отданный trunk, убирает около **1,17 ГБ/токен гарантированного трафика** (один закреплённый слой, больше никогда не читается). Гигабайт, отданный кэшу экспертов, убирает, ниже примерно 36 ГБ арены, **ничего измеримого**.
 
-Measured at a fixed 128 GB budget, endpoints of a six-point sweep:
+Измерено при фиксированном бюджете 128 ГБ, крайние точки шеститочечного sweep'а:
 
-| trunk | cache | s/token |
+| trunk | кэш | с/токен |
 |---:|---:|---:|
-| 12.3 | 110.7 | 28.38 |
-| **110.0** | **13.0** | **16.80** |
+| 12,3 | 110,7 | 28,38 |
+| **110,0** | **13,0** | **16,80** |
 
-**1.69× from allocation alone.** The faster configuration has a *smaller* expert cache
-and 0.0% expert retention.
+**В 1,69× от одного распределения.** Более быстрая конфигурация имеет *меньший* кэш экспертов и удержание экспертов 0,0%.
 
-These are single samples against a 33% noise floor, so read the *direction*, not the
-exact factor. The direction is supported by twelve points across two independent budgets
-(Spearman ρ = −0.886 at 128 GB, −0.714 at 32 GB) and by the mechanism above; the
-magnitude is not replicated. All twelve rows and the caveats are in
-[PERFORMANCE.md](PERFORMANCE.md#allocation-beats-capacity), raw data in
-[data/trunk-cache-split.tsv](data/trunk-cache-split.tsv), and
-`benchmarks/split-sweep.sh` re-runs the experiment with repetitions.
+Это единичные выборки на фоне 33% шума, поэтому читайте *направление*, а не точный коэффициент. Направление подкреплено двенадцатью точками в двух независимых бюджетах (Спирмен ρ = −0,886 при 128 ГБ, −0,714 при 32 ГБ) и механизмом выше; величина не реплицирована. Все двенадцать строк и оговорки — в [PERFORMANCE.md](PERFORMANCE.md#allocation-beats-capacity), сырые данные в [data/trunk-cache-split.tsv](data/trunk-cache-split.tsv), а `benchmarks/split-sweep.sh` перезапускает эксперимент с повторениями.
 
-### If the trunk and the checkpoint are on separate physical devices
+### Если trunk и чекпоинт на разных физических устройствах
 
-The asymmetry above assumes trunk and expert reads compete for one drive's bandwidth.
-On a machine where the packed trunk lives on one device and the checkpoint (routed
-experts) lives on another, that coupling does not hold: trunk reads then run on an
-otherwise idle device and overlap compute almost for free, so pinning more trunk layers
-buys little once the ring is already overlapping.
+Асимметрия выше предполагает, что чтения trunk и экспертов конкурируют за пропускную способность одного диска. На машине, где упакованный trunk живёт на одном устройстве, а чекпоинт (маршрутизируемые эксперты) — на другом, эта связь не работает: чтения trunk тогда идут на иначе простаивающем устройстве и перекрывают вычисления почти бесплатно, поэтому закрепление большего числа слоёв trunk даёт мало, когда кольцо уже перекрывается.
 
-The threshold that actually matters on this layout is the one the engine reports at
-startup, the point where a second ring slot becomes affordable:
+Порог, который действительно имеет значение на такой раскладке, — тот, что движок сообщает при запуске, точка, где второй кольцевой слот становится доступным:
 
 ```
 ring held at 1 slot: a second slot needs X.XX GB and the trunk budget is Y.YY GB,
 so reads are NOT overlapped with compute. Raise --trunk-gb above X.XX GB to enable it.
 ```
 
-Below that figure, trunk I/O sits on the critical path and costs measurably more; above
-it, the curve flattens and further pinning stops paying for itself. Set `--trunk-gb`
-just above that reported figure and give any remaining budget to `--cache-gb` instead,
-since on split storage the expert device is the sole bottleneck. Reported and measured
-by a user running the packed trunk on NVMe and the checkpoint on a separate SATA drive;
-see [PERFORMANCE.md](PERFORMANCE.md) for the full writeup.
+Ниже этого значения I/O trunk находится на критическом пути и стоит заметно дороже; выше — кривая выполаживается, и дальнейшее закрепление перестаёт окупаться. Установите `--trunk-gb` чуть выше сообщаемого значения и отдайте оставшийся бюджет `--cache-gb`, поскольку на раздельном хранилище устройство экспертов — единственное узкое место. Сообщено и измерено пользователем, запускавшим упакованный trunk на NVMe и чекпоинт на отдельном SATA-диске; см. [PERFORMANCE.md](PERFORMANCE.md) для полного изложения.
 
-## Why the expert cache is so weak
+## Почему кэш экспертов так слаб
 
-This is the model's design, not a shortcoming of the implementation.
+Это замысел модели, а не недостаток реализации.
 
-K3's router is trained with **Quantile Balancing**, which deliberately flattens expert
-usage so that no expert is favoured. Flat usage is precisely what defeats a
-least-recently-used cache: with no hot subset, a few gigabytes retain nothing worth
-keeping. Measurements bear this out, retention stays at exactly 0.0% from 28 slots all
-the way to 1,344, and the bytes read per token do not move by a single decimal.
+Роутер K3 обучен с **Quantile Balancing**, который намеренно выравнивает использование экспертов так, чтобы ни один эксперт не был предпочтителен. Ровное использование — именно то, что ломает кэш least-recently-used: без горячего подмножества нескольким гигабайтам нечего удерживать стоящего. Измерения это подтверждают: удержание остаётся ровно на 0,0% от 28 слотов до 1 344, и байты на токен не сдвигаются ни на десятую.
 
-It does eventually engage. Somewhere around 36 GB of arena, retention jumps to ~30% and
-bytes/token fall from 25.83 to 18.11. But by then you could have pinned most of the trunk
-for the same memory and gone faster.
+В конце концов он включается. Где-то около 36 ГБ арены удержание подскакивает до ~30% и байты/токен падают с 25,83 до 18,11. Но к тому моменту вы могли бы за ту же память закрепить большую часть trunk и работать быстрее.
 
-## Presets
+## Пресеты
 
 ```console
 $ ./bin/k3 --list-presets
 ```
 
-| preset | trunk | cache | total | expect |
+| пресет | trunk | кэш | всего | ожидания |
 |---|---:|---:|---:|---|
-| `ultra` | 2.5 | 0.31 | ~3 GB | proof-of-life only; streams embed/lm_head and reuses one state slot |
-| `laptop` | 3 | 1 | ~10 GB | ~32 s/token |
-| `desktop` | 16 | 10 | ~32 GB | ~31 s/token |
-| `workstation` | 60 | 30 | ~96 GB | ~24 s/token |
-| `server` | 110 | 13 | ~128 GB | ~17 s/token |
-| `max` | 110 | 109 | ~224 GB | ~19 s/token |
+| `ultra` | 2,5 | 0,31 | ~3 ГБ | только proof-of-life; стримит embed/lm_head и повторно использует один слот состояния |
+| `laptop` | 3 | 1 | ~10 ГБ | ~32 с/токен |
+| `desktop` | 16 | 10 | ~32 ГБ | ~31 с/токен |
+| `workstation` | 60 | 30 | ~96 ГБ | ~24 с/токен |
+| `server` | 110 | 13 | ~128 ГБ | ~17 с/токен |
+| `max` | 110 | 109 | ~224 ГБ | ~19 с/токен |
 
-`server` is the best value: the trunk is fully pinned at 110 GB and everything beyond
-that is spent on a cache that contributes little. Note `max` is not faster than `server`
-in these measurements, the extra 96 GB buys nothing outside the noise floor.
+`server` — лучшее соотношение: trunk полностью закреплён на 110 ГБ, и всё сверх того тратится на кэш, который мало что даёт. Заметьте, `max` не быстрее `server` в этих измерениях — дополнительные 96 ГБ ничего не дают вне уровня шума.
 
-Flags after `--preset` override it, so `--preset server --cache-gb 40` works.
+Флаги после `--preset` переопределяют его, поэтому `--preset server --cache-gb 40` работает.
 
-`ultra` is deliberately a separate execution path, not a smaller ordinary preset. It
-requires a packed trunk, streams exact BF16 embedding/lm_head bytes, and with full
-recompute clears and reuses one layer-state slot. It trades I/O for RAM and is intended
-for short, deterministic proof runs; speculative/draft decoding is rejected in this
-mode. The arithmetic, Top-K routing and weight precision are unchanged.
+`ultra` — намеренно отдельный путь выполнения, а не просто меньший обычный пресет. Он требует упакованного trunk, стримит точные BF16-байты embedding/lm_head и при полном перевычислении очищает и повторно использует один слот состояния слоя. Меняет I/O на RAM и предназначен для коротких детерминированных proof-прогонов; speculative/draft декодинг в этом режиме отклоняется. Арифметика, Top-K маршрутизация и точность весов неизменны.
 
-## Other options
+## Прочие опции
 
-**`--incremental`** carries a KV cache and the recurrent state between tokens instead of
-recomputing the prefix. Verified to produce identical tokens to full recompute. Use it
-unless you are specifically testing that equivalence.
+**`--incremental`** несёт KV-кэш и рекуррентное состояние между токенами вместо перевычисления префикса. Проверено, что даёт идентичные токены полному перевычислению. Используйте его, если только вы специально не тестируете эту эквивалентность.
 
-Note it allocates ~2.37 MB of KV cache **per position**, so long contexts cost
-memory: 16k positions is ~39 GB. The engine computes the requirement up front and refuses
-with both numbers rather than being OOM-killed an hour in.
+Заметьте, он выделяет ~2,37 МБ KV-кэша **на позицию**, поэтому длинные контексты стоят памяти: 16k позиций — ~39 ГБ. Движок заранее вычисляет требование и отказывает с обоими числами, а не получает OOM-kill через час.
 
-**`--trunk DIR`** enables trunk streaming and is what makes memory a dial. Without it the
-trunk is fully resident and the floor is ~115 GB. Pack it once with
-`tools/pack_trunk.py`.
+**`--trunk DIR`** включает стриминг trunk и делает память регулятором. Без него trunk полностью резидентен, и нижняя граница — ~115 ГБ. Упакуйте его один раз `tools/pack_trunk.py`.
 
-**`--layers N`** binds only the first N layers. Useful for testing the machinery on a
-partial download; the output is not the full model and the engine says so.
-`scripts/download-model.sh <dest> --layers N` fetches exactly that prefix (shards
-resolved from the Hub's tensor index, sizes verified), so a 1 TB disk can still
-exercise the pipeline.
+**`--layers N`** привязывает только первые N слоёв. Полезно для тестирования машинерии на частичной загрузке; вывод — не полная модель, и движок так и говорит. `scripts/download-model.sh <dest> --layers N` скачивает ровно этот префикс (шарды резолвятся из индекса Hub'а, размеры проверяются), поэтому диск на 1 ТБ всё ещё может прогнать пайплайн.
 
-## Storage matters more than you expect
+## Хранилище важнее, чем вы ожидаете
 
-The engine moves ~135 GB per token at low budgets. Storage bandwidth is usually the
-ceiling, not the CPU.
+Движок перемещает ~135 ГБ на токен при малых бюджетах. Пропускная способность хранилища обычно потолок, а не CPU.
 
-- Put the checkpoint and the packed trunk on the **fastest local NVMe** available.
-- Network or spinning storage will dominate everything else. A 6× difference in device
-  bandwidth is a 6× difference in throughput on this workload, which is larger than any
-  tuning decision in this document.
-- `./scripts/k3-doctor.sh` measures your device so you know which regime you are in.
+- Поместите чекпоинт и упакованный trunk на **самый быстрый локальный NVMe** из доступных.
+- Сеть или вращающиеся диски будут доминировать над всем остальным. 6× разница в пропускной способности устройства — это 6× разница в пропускной способности на этой нагрузке, что больше любого решения по тюнингу в этом документе.
+- `./scripts/k3-doctor.sh` измеряет ваше устройство, чтобы вы знали, в каком режиме находитесь.
 
-## Threads
+## Потоки
 
-`k3` runs on the **physical core count** by default. Left to itself OpenMP starts one
-thread per *logical* cpu, which on an SMT part is twice the core count, and that costs
-time on this workload rather than saving it: the extra threads migrate between cores and
-lose locality on a working set far larger than any cache.
+`k3` по умолчанию работает на **числе физических ядер**. Если его не трогать, OpenMP запускает по потоку на *логический* CPU, что на SMT-машинах вдвое больше ядер, и это стоит времени на этой нагрузке, а не экономит его: дополнительные потоки мигрируют между ядрами и теряют локальность на рабочем наборе, far larger любого кэша.
 
-Override with `--threads N`, or with `OMP_NUM_THREADS`, which still takes precedence over
-the default if you set it. `--threads` wins over both.
+Переопределите через `--threads N` или через `OMP_NUM_THREADS`, которая по-прежнему имеет приоритет над дефолтом, если вы её установили. `--threads` побеждает оба.
 
-The workload is I/O bound at low memory budgets, so more threads help less than you would
-expect once the trunk is streaming.
+Нагрузка I/O-bound при низких бюджетах памяти, поэтому большее число потоков помогает меньше, чем вы ожидаете, когда trunk уже стримится.
 
-## Before you conclude a change helped
+## Прежде чем решить, что изменение помогло
 
-The measured run-to-run spread on an identical configuration is **33%**. Differences
-smaller than that are not effects. Run each arm at least three times.
-[BENCHMARKING.md](BENCHMARKING.md) has the procedure.
+Измеренный разброс от прогона к прогону на идентичной конфигурации — **33%**. Различия меньше этого — не эффекты. Прогоните каждый вариант минимум три раза. [BENCHMARKING.md](BENCHMARKING.md) содержит процедуру.

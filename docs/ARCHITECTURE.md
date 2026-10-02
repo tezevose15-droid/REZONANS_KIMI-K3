@@ -1,149 +1,115 @@
-# Architecture
+# Архитектура
 
-How Kimi K3 maps onto this codebase. The model's own technical report is in
-[kimi-k3-tech-report.pdf](kimi-k3-tech-report.pdf); section numbers below refer to it.
+Как модель Kimi K3 отображается на эту кодовую базу. Собственный технический отчёт модели находится в [kimi-k3-tech-report.pdf](kimi-k3-tech-report.pdf); номера разделов ниже ссылаются на него.
 
-## The model
+## Модель
 
 | | |
 |---|---|
-| Parameters | 2.78T total, ~104B active per token |
-| Layers | 93: 69 KDA + 24 Gated MLA. Layer 0 has a dense FFN instead of a MoE block, so 92 layers route. |
-| Hidden | 7168 |
-| Attention heads | 96 |
-| Routed experts | 896 per layer, top-16 selected |
-| Shared experts | 2, full width |
-| Latent MoE width | 3584 |
-| Expert intermediate | 3072 |
-| Vocabulary | 163,840 |
-| Activation | SiTU-GLU (β₁ = 4, β₂ = 25) |
-| Expert weights | native MXFP4 |
+| Параметры | 2,78T всего, ~104B активных на токен |
+| Слои | 93: 69 KDA + 24 Gated MLA. Слой 0 имеет dense FFN вместо блока MoE, поэтому маршрутизируются 92 слоя. |
+| Скрытая размерность | 7168 |
+| Головы внимания | 96 |
+| Маршрутизируемые эксперты | 896 на слой, выбираются top-16 |
+| Общие эксперты | 2, полной ширины |
+| Скрытая ширина MoE | 3584 |
+| Промежуточная размерность эксперта | 3072 |
+| Словарь | 163 840 |
+| Активация | SiTU-GLU (β₁ = 4, β₂ = 25) |
+| Веса экспертов | нативный MXFP4 |
 
-Every one of these is **read from the checkpoint's own `config.json`** at startup, not
-hardcoded. The reader (`include/k3/k3_cfg.h`) refuses to substitute a default for a
-missing field, because a config it half-understands produces a model that runs and is
-architecturally wrong.
+Каждый из этих параметров **читается из собственного `config.json` чекпоинта** при запуске, а не захардкожен. Загрузчик (`include/k3/k3_cfg.h`) отказывается подставлять значение по умолчанию для отсутствующего поля, потому что конфигурация, понятая наполовину, порождает модель, которая запускается и архитектурно неверна.
 
-The MLA layers sit at one-based positions 4, 8, 12, … 92, **and 93**, the last two
-layers are both MLA, so the final layer always performs global attention (§2.1).
+Слои MLA находятся на позициях (нумерация с единицы) 4, 8, 12, … 92, **и 93** — два последних слоя оба MLA, поэтому последний слой всегда выполняет глобальное внимание (§2.1).
 
-## Where the memory goes
+## Куда уходит память
 
-| component | size | residency |
+| компонент | размер | резидентность |
 |---|---:|---|
-| Routed experts | 1.45 TB | never resident, streamed, MXFP4 |
-| Dense trunk | 108.81 GB | resident *or* streamed |
-| Embed + final norm + lm_head | 4.70 GB | always resident |
-| Recurrent state (93 layers) | 626 MB | always resident |
-| MLA KV cache | 2.37 MB/position | only with `--incremental` |
+| Маршрутизируемые эксперты | 1,45 ТБ | никогда не резидентны, стримятся, MXFP4 |
+| Dense trunk | 108,81 ГБ | резидентный *или* стримимый |
+| Embed + финальная норма + lm_head | 4,70 ГБ | всегда резидентны |
+| Рекуррентное состояние (93 слоя) | 626 МБ | всегда резидентно |
+| MLA KV-кэш | 2,37 МБ/позиция | только с `--incremental` |
 
-This table is the whole design. The 1.45 TB never lands in RAM; the 108.81 GB is the
-dial; the 5.3 GB is the floor.
+Эта таблица — весь дизайн. 1,45 ТБ никогда не попадают в RAM; 108,81 ГБ — регулятор; 5,3 ГБ — нижняя граница.
 
-## Module map
+## Карта модулей
 
 ```
 include/k3/
-  k3.h            public types, config, and the three invariants that must hold
-  k3_cfg.h        config reader, never defaults a missing field
+  k3.h            публичные типы, конфигурация и три инварианта, которые должны соблюдаться
+  k3_cfg.h        загрузчик конфигурации, никогда не подставляет значение по умолчанию для отсутствующего поля
 
 src/core/
-  k3_ops.c        every kernel: RMSNorm, SiTU-GLU, ShortConv, KDA recurrence,
+  k3_ops.c        все ядра: RMSNorm, SiTU-GLU, ShortConv, KDA-рекуррентность,
                   Gated MLA, AttnRes, MoE, MXFP4 matmul, bf16 matmul
 
 src/io/
-  k3_st.c         safetensors reader, hand-written, no dependency
-  k3_load.c       one coalesced pread per expert
-  k3_trunk.c      trunk streaming: ring buffer plus a pinned prefix
+  k3_st.c         читатель safetensors, написан вручную, без зависимостей
+  k3_load.c       один coalesced pread на эксперта
+  k3_trunk.c      стриминг trunk: кольцевой буфер плюс закреплённый префикс
 
 src/cache/
-  k3_cache.c      routed-expert LRU with batch prefetch
+  k3_cache.c      LRU-кэш маршрутизируемых экспертов с пакетной предвыборкой
 
 src/model/
-  k3_bind.c       binds tensors by name onto layer structures
+  k3_bind.c       привязывает тензоры по имени к структурам слоёв
 
 src/tokenizer/
-  k3_tok.h        loads the released tiktoken.model directly
+  k3_tok.h        загружает выпущенный tiktoken.model напрямую
 
 src/chat/
-  k3_chat.c       strict JSONL transcripts and official XTML segment rendering
-  k3_sampler.c    deterministic PCG32 temperature/top-p sampling
+  k3_chat.c       строгие JSONL-транскрипты и рендеринг официальных XTML-сегментов
+  k3_sampler.c    детерминированная выборка PCG32 с температурой/top-p
 
 src/cli/
-  k3_run.c        batch CLI plus the text-only chat REPL
+  k3_run.c        пакетный CLI плюс текстовый чат-REPL
 ```
 
-## Attention: two mechanisms
+## Внимание: два механизма
 
-**KDA** (69 layers, §2.1.1) is a linear-attention recurrence with a channel-wise forget
-gate. Per layer: separate q/k/v projections → ShortConv with fused SiLU → L2Norm on q and
-k only → per-head β from a sigmoid → decay `g = g_min · sigmoid(e^A · z)` with
-`g_min = −5` and **A indexed per head** → the recurrence → head-wise RMSNorm → a
-full-rank output gate.
+**KDA** (69 слоёв, §2.1.1) — линейное внимание с рекуррентностью и поканальным забывающим гейтом. На слой: отдельные проекции q/k/v → ShortConv с fused SiLU → L2Norm только на q и k → поканальный β из сигмоиды → затухание `g = g_min · sigmoid(e^A · z)` с `g_min = −5` и **A, индексированным по головам** → рекуррентность → поканальный RMSNorm → полноранговый выходной гейт.
 
-The recurrence order is load-bearing: decay the state, read from it, write the delta,
-*then* read the output from the already-updated state.
+Порядок рекуррентности критичен: затухание состояния, чтение из него, запись дельты, *затем* чтение выхода из уже обновлённого состояния.
 
-**Gated MLA** (24 layers, §2.1.2) compresses keys and values into a low-rank latent. It
-uses **NoPE**, no positional encoding at all, yet the 64 rope dimensions still exist
-and are still cached. Only the rotation is absent. Dropping the slots would change the
-head width from 192 to 128 and silently produce a different model.
+**Gated MLA** (24 слоя, §2.1.2) сжимает ключи и значения в низкоранговый латент. Использует **NoPE** — вообще без позиционного кодирования, однако 64 RoPE-измерения по-прежнему существуют и по-прежнему кэшируются. Только поворот отсутствует. Удаление слотов изменило бы ширину головы со 192 на 128 и молча породило бы другую модель.
 
 ## Attention Residuals (§2.2)
 
-Instead of accumulating one residual through depth, each layer attends over the outputs
-of preceding *blocks*. Layers are partitioned into blocks of 12; at a block boundary the
-running residual is snapshotted and cleared. The token embedding is always the first
-source, because layer 0 is itself a boundary.
+Вместо накопления одного остатка (residual) через глубину, каждый слой обращает внимание на выходы предшествующих *блоков*. Слои разбиты на блоки по 12; на границе блока текущий остаток сохраняется снимком и сбрасывается. Эмбеддинг токена всегда является первым источником, потому что слой 0 сам является границей.
 
 ## Stable LatentMoE (§2.3)
 
-The routed path projects down to a 3584-wide latent, dispatches to 16 of 896 experts,
-RMSNorms the **aggregate** (not each expert), then projects back to full width. Two
-shared experts process the input at full width and are added unweighted.
+Маршрутизируемый путь проецируется вниз до латента шириной 3584, диспетчеризуется к 16 из 896 экспертов, RMSNorm применяется к **агрегату** (не к каждому эксперту), затем проецируется обратно к полной ширине. Два общих эксперта обрабатывают вход на полной ширине и добавляются без взвешивания.
 
-The router computes independent sigmoid scores; they do not sum to 1, and a frozen
-per-expert bias steers **selection only**. Combining weights come from the *unbiased*
-scores. Using the biased scores for the weights still routes to the same experts and only
-perturbs the mixture, which is exactly why it is easy to get wrong and hard to notice.
+Роутер вычисляет независимые сигмоидные скоры; они не суммируются в 1, и замороженный поканальный bias управляет **только выбором**. Веса комбинирования берутся из *несмещённых* скоров. Использование смещённых скоров для весов всё равно маршрутизирует к тем же экспертам и лишь слегка искажает смесь — именно поэтому это легко сделать неверно и трудно заметить.
 
-## MXFP4 experts
+## MXFP4-эксперты
 
-Expert weights ship in OCP MX FP4 and are **never dequantised**. `k3_matmul_mxfp4`
-consumes packed nibbles directly:
+Веса экспертов поставляются в OCP MX FP4 и **никогда не деквантуются**. `k3_matmul_mxfp4` потребляет упакованные нибблы напрямую:
 
 ```
 value = E2M1[nibble] · 2^(E8M0_scale − 127)
 ```
 
-with one shared 8-bit exponent per 32 elements. One expert is 33,030,144 parameters in
-17,547,264 bytes, 0.53125 bytes per weight.
+с одной общей 8-битной экспонентой на 32 элемента. Один эксперт — 33 030 144 параметра в 17 547 264 байтах, 0,53125 байт на вес.
 
-Dequantising would turn a 17.5 MB expert into 132 MB, and a token touches 1,472 of them
-(92 routing layers × top-16): 194 GB per token of pure widening. The whole streaming
-design depends on not doing that.
+Деквантование превратило бы 17,5 МБ эксперта в 132 МБ, а токен затрагивает 1 472 из них (92 маршрутизируемых слоя × top-16): 194 ГБ на токен чистого расширения. Весь дизайн стриминга зависит от того, чтобы этого не делать.
 
-Nibble order is a convention, not a rule: the low nibble is the even element. Reversing
-it yields a matrix with the right values in the wrong places: every statistic looks
-correct and the model is wrong. There is a fixture for exactly this.
+Порядок нибблов — соглашение, а не правило: младший ниббл — чётный элемент. Инверсия даёт матрицу с правильными значениями не на тех местах: вся статистика выглядит корректно, а модель неверна. Для этого случая есть фикстура.
 
-## Trunk streaming
+## Стриминг trunk
 
-Each layer's trunk tensors form one contiguous run inside its shard, so
-`tools/pack_trunk.py` copies them into a single file as 93 sequential range copies, and
-loading a layer later is one `pread` from a known offset.
+Тензоры trunk каждого слоя образуют один непрерывный отрезок внутри своего шарда, поэтому `tools/pack_trunk.py` копирует их в один файл как 93 последовательные копии диапазонов, а загрузка слоя позже — это один `pread` с известного смещения.
 
-The trunk is walked in the same fixed order every token, which makes prefetch perfect and
-lets the read overlap compute. Given enough budget, layers are *pinned* rather than
-cycled. A cyclic scan defeats LRU, so a pinned prefix is used instead.
+Trunk обходится в одном и том же фиксированном порядке каждый токен, что делает предвыборку идеальной и позволяет перекрыть чтение с вычислениями. При достаточном бюджете слои *закрепляются* (pinned), а не циклируются. Циклический скан ломает LRU, поэтому вместо него используется закреплённый префикс.
 
-## Correctness
+## Корректность
 
-- **op level**: every kernel against reference values at a declared tolerance
-- **layer level**: all 93 layers of the released checkpoint individually
-- **model level**: teacher forcing, greedy decode, and incremental decode must all match
-  a reference exactly on a tiny model with the same tensor graph
-- **numeric level**: logits from the released 93-layer checkpoint compared elementwise
-  against a torch reference
+- **уровень операций**: каждое ядро сверяется с эталонными значениями при заявленном допуске
+- **уровень слоя**: все 93 слоя выпущенного чекпоинта индивидуально
+- **уровень модели**: teacher forcing, жадный декодинг и инкрементальный декодинг должны точно совпадать с эталоном на крошечной модели с тем же графом тензоров
+- **числовой уровень**: логиты из выпущенного 93-слойного чекпоинта поэлементно сравниваются с torch-эталоном
 
-See [TESTING.md](TESTING.md).
+См. [TESTING.md](TESTING.md).

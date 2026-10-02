@@ -111,7 +111,7 @@ int k3_chat_history_add(K3ChatHistory *h, int role, const char *content,
     if (h->n == h->cap) {
         int cap = h->cap ? h->cap * 2 : 8;
         K3ChatMessage *v = (K3ChatMessage *)realloc(h->v, (size_t)cap * sizeof(*v));
-        if (!v) { fail(err, err_n, "out of memory growing history"); return -1; }
+        if (!v) { fail(err, err_n, "нехватка памяти при расширении истории"); return -1; }
         h->v = v; h->cap = cap;
     }
     K3ChatMessage m; memset(&m, 0, sizeof m); m.role = role;
@@ -247,17 +247,17 @@ int k3_chat_history_load(K3ChatHistory *h, const char *path, char *err, size_t e
     while ((ch = fgetc(f)) != EOF) {
         if (ch == '\n') {
             line_no++; if (!n) { fail(err, err_n, "%s:%d is blank", path, line_no); goto done; }
-            if (putc_(&line, &n, &cap, 0)) { fail(err, err_n, "out of memory reading history"); goto done; }
+            if (putc_(&line, &n, &cap, 0)) { fail(err, err_n, "нехватка памяти при чтении истории"); goto done; }
             K3ChatMessage m;
             if (parse_record(line, &m, err, err_n)) { char msg[256]; snprintf(msg, sizeof msg, "%s", err); fail(err, err_n, "%s:%d: %s", path, line_no, msg); goto done; }
-            if (h->n == h->cap) { int nc = h->cap ? h->cap * 2 : 8; K3ChatMessage *v = (K3ChatMessage *)realloc(h->v, (size_t)nc * sizeof(*v)); if (!v) { k3_chat_message_free(&m); fail(err, err_n, "out of memory growing history"); goto done; } h->v = v; h->cap = nc; }
+            if (h->n == h->cap) { int nc = h->cap ? h->cap * 2 : 8; K3ChatMessage *v = (K3ChatMessage *)realloc(h->v, (size_t)nc * sizeof(*v)); if (!v) { k3_chat_message_free(&m); fail(err, err_n, "нехватка памяти при расширении истории"); goto done; } h->v = v; h->cap = nc; }
             h->v[h->n++] = m; n = 0; continue;
         }
         if (n >= 16 * 1024 * 1024) { fail(err, err_n, "%s:%d exceeds 16 MiB", path, line_no + 1); goto done; }
-        if (putc_(&line, &n, &cap, (unsigned char)ch)) { fail(err, err_n, "out of memory reading history"); goto done; }
+        if (putc_(&line, &n, &cap, (unsigned char)ch)) { fail(err, err_n, "нехватка памяти при чтении истории"); goto done; }
     }
     if (ferror(f)) { fail(err, err_n, "failed reading %s", path); goto done; }
-    if (n) { line_no++; if (putc_(&line, &n, &cap, 0)) { fail(err, err_n, "out of memory reading history"); goto done; } K3ChatMessage m; if (parse_record(line, &m, err, err_n)) { char msg[256]; snprintf(msg, sizeof msg, "%s", err); fail(err, err_n, "%s:%d: %s", path, line_no, msg); goto done; } if (h->n == h->cap) { int nc = h->cap ? h->cap * 2 : 8; K3ChatMessage *v = (K3ChatMessage *)realloc(h->v, (size_t)nc * sizeof(*v)); if (!v) { k3_chat_message_free(&m); fail(err, err_n, "out of memory growing history"); goto done; } h->v = v; h->cap = nc; } h->v[h->n++] = m; }
+    if (n) { line_no++; if (putc_(&line, &n, &cap, 0)) { fail(err, err_n, "нехватка памяти при чтении истории"); goto done; } K3ChatMessage m; if (parse_record(line, &m, err, err_n)) { char msg[256]; snprintf(msg, sizeof msg, "%s", err); fail(err, err_n, "%s:%d: %s", path, line_no, msg); goto done; } if (h->n == h->cap) { int nc = h->cap ? h->cap * 2 : 8; K3ChatMessage *v = (K3ChatMessage *)realloc(h->v, (size_t)nc * sizeof(*v)); if (!v) { k3_chat_message_free(&m); fail(err, err_n, "нехватка памяти при расширении истории"); goto done; } h->v = v; h->cap = nc; } h->v[h->n++] = m; }
     rc = k3_chat_history_validate(h, err, err_n);
 done:
     free(line); fclose(f); if (rc) k3_chat_history_free(h); return rc;
@@ -281,7 +281,7 @@ static int jwrite(FILE *f, const char *s)
 int k3_chat_history_save(const K3ChatHistory *h, const char *path, char *err, size_t err_n)
 {
     if (k3_chat_history_validate(h, err, err_n)) return -1;
-    char tmp[4096]; if (snprintf(tmp, sizeof tmp, "%s.tmp.XXXXXX", path) >= (int)sizeof tmp) { fail(err, err_n, "history path too long"); return -1; }
+    char tmp[4096]; if (snprintf(tmp, sizeof tmp, "%s.tmp.XXXXXX", path) >= (int)sizeof tmp) { fail(err, err_n, "путь истории слишком длинный"); return -1; }
     int fd = mkstemp(tmp); if (fd < 0) { fail(err, err_n, "cannot create history temp file: %s", strerror(errno)); return -1; }
     FILE *f = fdopen(fd, "wb"); if (!f) { close(fd); unlink(tmp); fail(err, err_n, "cannot open history temp file"); return -1; }
     int rc = 0;

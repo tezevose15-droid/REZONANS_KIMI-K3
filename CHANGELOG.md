@@ -1,272 +1,116 @@
-# Changelog
+# Журнал изменений
 
-Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
-versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Формат соответствует [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); версионирование соответствует [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Fixed
+### Исправлено
 
-- **The trunk report counted a prefetched layer as a hit** whenever its read finished
-  before the walk bound it. On a fully streamed run of the tiny checkpoint, every one of
-  the 156 layer binds was a real read ("reads 156 against 156 the walk owes"), and the
-  line above it still said `hits 144 (92.3%), reads 12`. A layer the reader fetched
-  ahead is now charged as a read to the bind that reaches it, whichever thread gets there
-  first, so the counts no longer depend on timing and the hit rate again tracks the
-  pinned fraction. Counting only: output is unchanged. This was also the cause of an
-  intermittent `test_trunk` failure on CI, which now tests both interleavings.
+- **Отчёт trunk считал предвыбранный слой как hit**, когда его чтение завершалось до того, как обход его привязал. На полностью стримимом прогоне крошечного чекпоинта каждая из 156 привязок слоёв была реальным чтением («reads 156 against 156 the walk owes»), а строка выше всё равно говорила `hits 144 (92.3%), reads 12`. Слой, который читатель предвыбрал, теперь засчитывается как чтение для привязки, которая до него добралась, какой бы поток ни успел первым, поэтому счётчики больше не зависят от тайминга, и hit rate снова отслеживает долю закреплённых. Только подсчёт: вывод не изменился. Это также было причиной sporadic падения `test_trunk` на CI, который теперь тестирует оба interleaving'а.
 
 ## [1.1.0] - 2026-10-02
 
-Chat, native Windows builds alongside Linux and macOS, an 8 GB class mode for the
-complete model, NEON kernels for ARM, and a round of hardening on everything that parses
-checkpoint files. Output is unchanged wherever it was already defined: every oracle gate
-still matches the reference exactly.
+Чат, нативные сборки Windows наряду с Linux и macOS, режим класса 8 ГБ для полной модели, NEON-ядра для ARM и раунд hardening'а всего, что парсит файлы чекпоинта. Вывод неизменён везде, где уже был определён: каждая oracle-проверка по-прежнему точно совпадает с эталоном.
 
-One compatibility note: `--save-state` files move to version 2, with a checksum. A
-version 1 file is refused with a clear message rather than read; regenerate it with
-`--gen 0 --incremental --save-state`.
+Одно замечание о совместимости: файлы `--save-state` переходят на версию 2 с контрольной суммой. Файл версии 1 отклоняется с понятным сообщением, а не читается; перегенерируйте его через `--gen 0 --incremental --save-state`.
 
-### Added
+### Добавлено
 
-- **`--preset ultra` and `--ultra-low-memory`**: the complete 93 layer model inside an
-  8 GB class memory budget, by streaming exact embedding rows and bounded lm_head chunks
-  and reusing one recurrent state slot. Same weights, same top-16 routing, same kernels.
-  Verified with four full runs on a Jetson Orin Nano Super against the released
-  checkpoint, identical ids and identical logits each time. Slow, by design.
-- **NEON kernels on aarch64** for the bf16, MXFP4 and q8 matmuls, so Apple Silicon and
-  ARM servers are no longer scalar only. Bit identical to the scalar path.
-- **`--chat`**: a terminal REPL implementing K3's official XTML chat format, message
-  envelopes, the `thinking_effort` system preamble, and `reasoning_content` on prior
-  assistant turns, rendered exactly as the checkpoint's own encoder does, with JSONL
-  history and a parser for one assistant completion. Greedy by default; `--temperature`,
-  `--top-p`, and `--seed` opt in to sampling. `--no-think` and `--thinking-effort low`,
-  `high`, or `max` skip or size the think channel, which on a short answer is most of
-  the cost. Without a chat template the engine had completed a chat-shaped prompt as if
-  it were mid document rather than answering it.
-- **`--trunk-ring N`**: the streaming trunk's prefetch queue depth is now a flag
-  (default 2) instead of fixed at two slots.
-- **Ctrl-C stops at a safe point.** The first Ctrl-C lets the step in flight finish,
-  then writes the state file, the `--out` JSON and the reports exactly as a finished run
-  would, and exits 5. A second Ctrl-C kills. Before, SIGINT discarded everything.
-- **Chat reuses the previous turn's state.** When the next turn's rendered prompt begins
-  with exactly the ids the carried state was built from, only the new tail is prefilled.
-  GATE 3b in the oracle requires that to be bit identical to a full prefill: logits, every
-  KV row, and the KDA state.
-- **`--top-k K`** for chat sampling, on the existing sampler. Off by default.
-- **`--threads N`**, and a default of the physical core count on Linux instead of one
-  thread per logical CPU, which measured about 23% slower per token on a 16 core SMT part.
-- **`download-model.sh <dest> --layers N`** fetches only the shards a `--layers N` run
-  needs, resolved from the Hub's own index, with a banner saying the result is not the
-  model.
-- **A missing tensor names the missing file.** The shard filenames declare the shard
-  count, so a partial download now says which file is absent instead of only which
-  tensor.
-- **`--stop-id N`** (repeatable, up to 8): generation halts as soon as the model emits
-  a listed token id. Off by default, so `--gen N` still means exactly N tokens for
-  every benchmark and oracle gate. The stop id stays in the sequence, so `--save-state`
-  and a later `--load-state` continue from what the model actually produced, and the
-  check runs at emit time so a `--spec` sweep is truncated at the stop exactly like
-  serial decode. `k3_run.json` gains `"stopped_at"` (the id, or -1). Parsing is with
-  `strtol` and refuses a non-integer, a negative, or an id past the vocabulary, since a
-  stop the model can never emit is indistinguishable from a model that never emitted
-  one.
-- **Prefill on `--gen 0`**: `--gen 0 --incremental --save-state` now runs the prompt's
-  prefill and saves its exact KV and recurrent state with zero generated tokens, so a
-  shared prefix (a system prompt, a long document) can be warmed once and resumed many
-  times with `--load-state`. Previously `--gen 0` skipped the decode loop and saved
-  nothing useful.
-- **Windows support**: builds natively via MSYS2's MinGW-w64 GCC, no WSL required.
-  `make`, `make test`, and `make test-all` pass every gate unmodified, including the
-  full-model oracle and tokenizer parity (45/45) against real Kimi K3 weights.
-  `src/io/k3_portable_io.h` gained a Windows branch alongside the existing Darwin one,
-  porting `O_DIRECT` (via `FILE_FLAG_NO_BUFFERING`, intercepted at `open()` since
-  Windows -- unlike Darwin -- cannot add it to an already-open handle), `pread` (via
-  `ReadFile`'s `OVERLAPPED` offset fields, chosen specifically because it does not
-  share mutable file-pointer state across threads the way `SetFilePointerEx` +
-  `ReadFile` would), `posix_memalign` (via `_aligned_malloc`), and `getrusage`/
-  `MemAvailable` (via `GetProcessMemoryInfo`/`GlobalMemoryStatusEx`). `make asan`/
-  `make ubsan` switch to Clang on Windows (MinGW-w64's GCC package ships no sanitizer
-  runtime at all, confirmed directly rather than assumed).
+- **`--preset ultra` и `--ultra-low-memory`**: полная 93-слойная модель внутри бюджета памяти класса 8 ГБ путём стриминга точных embedding-строк и ограниченных lm_head-чанков и повторного использования одного слота рекуррентного состояния. Те же веса, та же top-16 маршрутизация, те же ядра. Проверено четырьмя полными прогонами на Jetson Orin Nano Super против выпущенного чекпоинта, идентичные id и идентичные логиты каждый раз. Медленно — по дизайну.
+- **NEON-ядра на aarch64** для bf16, MXFP4 и q8 matmul, поэтому Apple Silicon и ARM-серверы больше не только скалярные. Побитово идентично скалярному пути.
+- **`--chat`**: терминальный REPL, реализующий официальный формат чата K3 XTML, конверты сообщений, преамбулу системы `thinking_effort` и `reasoning_content` на предыдущих ходах ассистента, отрендеренные точно как это делает собственный энкодер чекпоинта, с историей JSONL и парсером одного completion ассистента. По умолчанию жадный; `--temperature`, `--top-p` и `--seed` включают выборку. `--no-think` и `--thinking-effort low`, `high` или `max` пропускают или размеряют канал размышления (thinking channel), который на коротком ответе составляет большую часть стоимости. Без шаблона чата движок дополнял промпт в форме чата так, будто это середина документа, а не ответ на него.
+- **`--trunk-ring N`**: глубина очереди предвыборки стримингового trunk теперь флаг (по умолчанию 2) вместо фиксированных двух слотов.
+- **Ctrl-C останавливается в безопасной точке.** Первое нажатие Ctrl-C даёт завершиться текущему шагу, затем записывает файл состояния, `--out` JSON и отчёты точно как завершённый прогон, и выходит с кодом 5. Второе Ctrl-C убивает. Раньше SIGINT отбрасывал всё.
+- **Чат повторно использует состояние предыдущего хода.** Когда отрендеренный промпт следующего хода начинается ровно с id, из которых было построено переносимое состояние, делается prefill только нового хвоста. GATE 3b в oracle требует, чтобы это было побитово идентично полному prefill: логиты, каждая строка KV и состояние KDA.
+- **`--top-k K`** для выборки в чате, на существующем семплере. По умолчанию выкл.
+- **`--threads N`** и дефолт в число физических ядер на Linux вместо одного потока на логический CPU, что измерено примерно на 23% медленнее на токен на 16-ядерной SMT-машине.
+- **`download-model.sh <dest> --layers N`** скачивает только шарды, нужные для прогона `--layers N`, резолвя из собственного индекса Hub'а, с баннером, что результат — не модель.
+- **Отсутствующий тензор называет отсутствующий файл.** Имена файлов шардов декларируют число шардов, поэтому частичная загрузка теперь говорит, какой файл отсутствует, а не только какой тензор.
+- **`--stop-id N`** (повторяемый, до 8): генерация останавливается, как только модель выдаёт указанный id токена. По умолчанию выкл., поэтому `--gen N` по-прежнему означает ровно N токенов для каждого бенчмарка и oracle-проверки. Stop id остаётся в последовательности, поэтому `--save-state` и последующий `--load-state` продолжают с того, что модель фактически породила, а проверка выполняется в момент эмита, поэтому sweep `--spec` усекается на стопе точно как последовательный декодинг. `k3_run.json` получает `"stopped_at"` (id или -1). Парсинг через `strtol` и отклоняет нецелое, отрицательное или id за словарём, поскольку стоп, который модель никогда не может выдать, неотличим от модели, которая его никогда не выдавала.
+- **Prefill при `--gen 0`**: `--gen 0 --incremental --save-state` теперь прогоняет prefill промпта и сохраняет его точные KV и рекуррентное состояние с нулём сгенерированных токенов, поэтому общий префикс (системный промпт, длинный документ) можно прогреть один раз и много раз возобновлять через `--load-state`. Раньше `--gen 0` пропускал цикл декодинга и не сохранял ничего полезного.
+- **Поддержка Windows**: нативная сборка через MinGW-w64 GCC из MSYS2, без WSL. `make`, `make test` и `make test-all` проходят каждую проверку без изменений, включая full-model oracle и паритет токенизатора (45/45) против реальных весов Kimi K3. `src/io/k3_portable_io.h` получил Windows-ветку наряду с существующей Darwin-веткой, портировав `O_DIRECT` (через `FILE_FLAG_NO_BUFFERING`, перехватываемый в `open()`, поскольку Windows — в отличие от Darwin — не может добавить его к уже открытому хендлу), `pread` (через поля смещения `OVERLAPPED` в `ReadFile`, выбранные именно потому, что они не делят изменяемое состояние файлового указателя между потоками, как `SetFilePointerEx` + `ReadFile`), `posix_memalign` (через `_aligned_malloc`) и `getrusage`/`MemAvailable` (через `GetProcessMemoryInfo`/`GlobalMemoryStatusEx`). `make asan`/`make ubsan` переключаются на Clang на Windows (пакет GCC MinGW-w64 вообще не поставляет sanitizer runtime, проверено напрямую, а не предположено).
 
-### Changed
+### Изменено
 
-- **The MXFP4 expert matmul is about 1.6x faster**, decoding nibbles in register, plus
-  another 1.56x from a flat-row AVX2 path when the group is a multiple of 16. Bit
-  identical, checked against the kernel hashes before and after.
-- **Expert reads are split into 1 MiB chunks**, so a batch of reads no longer waits on its
-  slowest expert. Output is unchanged.
-- **Trunk layers are read in parallel chunks.** `load_run()` streamed each layer with
-  one sequential `pread` loop, so the device saw queue depth 1. It now splits the layer
-  into 64 MiB chunks (a multiple of `K3_TRUNK_ALIGN`, so every chunk stays aligned for
-  `O_DIRECT` and `F_NOCACHE`) issued under an OpenMP parallel for, matching what the
-  expert path already does. Without OpenMP the loop still runs one chunk at a time. A
-  short read in any chunk fails the whole layer, as before, and the decoded output and
-  `trunk_bytes_read` are unchanged.
-- **Trunk layers are pinned largest-first instead of as a prefix.** Prefix pinning
-  always pinned the 2.34 GB dense layer first, which sized the streaming ring's slot to
-  it even after it stopped needing the ring at all. `K3_PIN_PREFIX=1` restores the old
-  order on the same binary.
+- **MXFP4 expert matmul примерно в 1,6× быстрее**, декодируя нибблы в регистре, плюс ещё 1,56× от flat-row AVX2-пути, когда группа кратна 16. Побитово идентично, сверено с хешами ядер до и после.
+- **Чтения экспертов разбиты на чанки по 1 МиБ**, поэтому пакет чтений больше не ждёт самого медленного эксперта. Вывод неизменён.
+- **Слои trunk читаются параллельными чанками.** `load_run()` стримил каждый слой одним последовательным циклом `pread`, поэтому устройство видело глубину очереди 1. Теперь слой разбивается на чанки по 64 МиБ (кратные `K3_TRUNK_ALIGN`, поэтому каждый чанк остаётся выровненным для `O_DIRECT` и `F_NOCACHE`), выдаваемые под OpenMP parallel for, как уже делает путь экспертов. Без OpenMP цикл по-прежнему идёт по одному чанку. Короткое чтение в любом чанке валит весь слой, как и раньше, и декодированный вывод и `trunk_bytes_read` неизменны.
+- **Слои trunk закрепляются от largest-first вместо префикса.** Закрепление префиксом всегда закрепляло dense-слой 2,34 ГБ первым, что задавало размер слота стримингового кольца под него, даже когда ему вообще перестало требоваться кольцо. `K3_PIN_PREFIX=1` восстанавливает старый порядок на том же бинарнике.
 
-### Fixed
+### Исправлено
 
-- **macOS could not read the embedding table or a packed trunk layer.** Darwin's pread
-  refuses a single request of 2 GiB or more, and both exceed it; reads are now chunked.
-  The download script also works on macOS and with current huggingface_hub releases.
-- **CMake on Apple Silicon and on macOS.** The ARM64 build was handed x86 flags, and the
-  macOS build silently came out single threaded because CMake could not find Homebrew's
-  libomp. Both are fixed.
-- **`k3_matmul_mxfp4` now enforces its documented preconditions.** An odd input width or a
-  group above 64 aborts with a message instead of writing past the caller's buffer.
-- **`--preset auto` refused itself on large machines.** It planned to 98% of available
-  memory while admission allowed 95%, so from about 100 GB of RAM upward the recommended
-  preset could never start, and the refusal printed a negative shortfall. One constant
-  now drives both.
-- **On macOS the available memory read as 0**, which silently switched off both memory
-  refusals. Darwin and Windows now have their own probes, and Windows also caps by the
-  remaining commit limit.
-- **A state file could be wrong without the loader noticing.** One flipped byte restored
-  cleanly, and a save that failed partway destroyed the previous good file. The payload
-  is now checksummed and the file published by an atomic rename. State files move to
-  version 2; a version 1 file is refused rather than guessed at.
-- **Safetensors headers whose tensor spans overlap or leave a gap** were read without
-  complaint, shifting every tensor after them. They are refused now, the same rule the
-  reference loader applies; all 96 shards of the released checkpoint pass it.
-- **The JSON parser read past the end of a truncated string** and accepted incomplete
-  documents. Both are refusals now. Every JSON file the engine reads from the released
-  checkpoint parses to the same tree as before.
-- **A refused trunk.json leaked its whole parse tree**, and `--ids` values past the int
-  range wrapped to a real token id.
-- **Hostile or corrupt safetensors, trunk, and config input could reach undefined
-  behavior instead of a refusal.** Integer overflow in shape and offset arithmetic
-  (a hostile shape or `data_offsets` pair near `INT64_MAX` could wrap and defeat the
-  bounds checks meant to catch it), an out-of-bounds read on an empty trunk layer
-  array, a batched MoE prefill path that summed uninitialized memory when an expert
-  failed to load instead of contributing zero as the per-token path already does, and
-  unchecked allocations in the JSON parser and the shard directory listing that could
-  crash through a null pointer rather than fail cleanly. A new weightless test,
-  `test_st_faults`, builds mutated copies of the fixture shards and asserts each
-  failure mode is refused loudly. No input that was already valid changes.
-- **`--ids` with a non-numeric piece silently became token id 0** instead of being
-  refused, because a failed `strtol` call and a real id of 0 are indistinguishable
-  without checking where parsing stopped.
-- **`--layers 0` or a value past the real layer count silently ran the complete
-  model**, as if `--layers` had not been given, instead of being refused as the typo
-  it almost always is.
-- **An `--out` path that could not be written still exited 0**, indistinguishable from
-  a run whose result was actually saved. It now exits 3.
-- **`k3_run.json` was not valid JSON after a run that generated nothing.** With
-  `nout == 0` the `seconds_per_token` field computed `t_total / nout` and emitted a
-  bare `inf`, so a harness driving `--gen 0 --save-state` failed on the one run it
-  needed to parse. It now reports `0`.
-- **Heap corruption on Windows** (`STATUS_HEAP_CORRUPTION`) in the trunk and expert-
-  cache arena allocators: `_aligned_malloc`, which backs the Windows `posix_memalign`
-  shim, must be freed with `_aligned_free`, not plain `free`. POSIX's `posix_memalign`
-  carries no such restriction, so this compiled cleanly and only crashed once the
-  corrupted allocator metadata was actually used, well after the allocation itself.
-  Three call sites needed the fix: `k3_cache.c`'s cache arena, and `k3_trunk.c`'s
-  trunk arena and per-layer pinned buffers.
-- **`SHARD_DIR`/`TOK_FILES` unquoted in the Makefile**: a path containing a space
-  (routine on Windows, e.g. an "AI LOCAL MODELS" folder) silently split into extra
-  argv entries instead of failing loudly, and `test_expert`/`test_real_layer`/
-  `test_tok`/`test_cfg` read whichever truncated token happened to resolve to a path,
-  rather than refusing outright.
+- **macOS не мог читать таблицу эмбеддингов или слой упакованного trunk.** Darwin'овский pread отказывается от одного запроса на 2 ГиБ и более, а оба превышают его; чтения теперь разбиты на чанки. Скрипт загрузки также работает на macOS и с текущими релизами huggingface_hub.
+- **CMake на Apple Silicon и на macOS.** Сборка ARM64 получала x86-флаги, а сборка macOS молча выходила однопоточной, потому что CMake не мог найти libomp из Homebrew. Оба исправлены.
+- **`k3_matmul_mxfp4` теперь обеспечивает свои документированные предусловия.** Нечётная входная ширина или группа выше 64 прерываются с сообщением вместо записи за буфер вызывающего.
+- **`--preset auto` отказывал сам себе на больших машинах.** Он планировал на 98% доступной памяти, тогда как допуск разрешал 95%, поэтому примерно от 100 ГБ RAM рекомендуемый пресет никогда не мог стартовать, а отказ печатал отрицательную нехватку. Одна константа теперь управляет обоими.
+- **На macOS доступная память читалась как 0**, что молча отключало оба отказа по памяти. У Darwin и Windows теперь собственные пробы, а Windows также ограничивает по оставшемуся commit-лимиту.
+- **Файл состояния мог быть неверным без ведома загрузчика.** Один перевёрнутый байт восстанавливался чисто, а сохранение, падавшее на полпути, уничтожало предыдущий хороший файл. Payload теперь с контрольной суммой и файл публикуется атомарным rename. Файлы состояния переходят на версию 2; файл версии 1 отклоняется, а не угадывается.
+- **Заголовки safetensors, чьи спаны тензоров перекрываются или оставляют зазор**, читались без жалобы, сдвигая каждый тензор после них. Теперь они отклоняются — то же правило, что применяет эталонный загрузчик; все 96 шардов выпущенного чекпоинта его проходят.
+- **JSON-парсер читал за конец усечённой строки** и принимал неполные документы. Оба теперь — отказы. Каждый JSON-файл, который движок читает из выпущенного чекпоинта, парсится в то же дерево, что и раньше.
+- **Отклонённый trunk.json утекал всё своё дерево разбора**, а значения `--ids` за диапазоном int заворачивались к реальному id токена.
+- **Враждебный или повреждённый ввод safetensors, trunk и config мог достичь неопределённого поведения вместо отказа.** Целочисленное переполнение в арифметике форм и смещений (враждебная форма или пара `data_offsets` около `INT64_MAX` могла завернуться и обойти проверки границ, призванные это ловить), чтение за границами на пустом массиве слоёв trunk, пакетный MoE prefill-путь, суммировавший неинициализированную память, когда эксперт не загрузился, вместо вклада нуля, как уже делает потóковый путь, и непроверенные аллокации в JSON-парсере и листинге каталога шардов, которые могли упасть через нулевой указатель, а не чисто отказать. Новый безвесовой тест `test_st_faults` строит мутированные копии фикстурных шардов и asserts, что каждый режим отказа громко отклоняется. Ни один ввод, который уже был валиден, не меняется.
+- **`--ids` с нечисловым куском молча становился id токена 0** вместо отклонения, потому что неудачный вызов `strtol` и реальный id 0 неразличимы без проверки, где парсинг остановился.
+- **`--layers 0` или значение за реальным числом слоёв молча запускало полную модель**, как будто `--layers` не был задан, вместо отклонения как опечатки, которой оно почти всегда является.
+- **Путь `--out`, который нельзя записать, всё равно выходил с 0**, неотличимо от прогона, чей результат действительно сохранён. Теперь выходит с 3.
+- **`k3_run.json` не был валидным JSON после прогона, который ничего не сгенерировал.** При `nout == 0` поле `seconds_per_token` вычисляло `t_total / nout` и выдавало голый `inf`, поэтому харнес, управляющий `--gen 0 --save-state`, падал на том единственном прогоне, который ему нужно было распарсить. Теперь сообщает `0`.
+- **Порча кучи на Windows** (`STATUS_HEAP_CORRUPTION`) в аллокаторах арен trunk и кэша экспертов: `_aligned_malloc`, лежащий в основе Windows-шима `posix_memalign`, должен освобождаться через `_aligned_free`, а не plain `free`. У POSIX'овского `posix_memalign` такого ограничения нет, поэтому это чисто компилировалось и падало лишь когда повреждённые метаданные аллокатора фактически использовались, сильно после самого выделения. Три точки вызова требовали исправления: арена кэша `k3_cache.c` и арена trunk и per-layer pinned-буферы `k3_trunk.c`.
+- **`SHARD_DIR`/`TOK_FILES` без кавычек в Makefile**: путь с пробелом (обычно на Windows, напр. папка «AI LOCAL MODELS») молча разбивался на лишние argv-элементы вместо громкого отказа, и `test_expert`/`test_real_layer`/`test_tok`/`test_cfg` читали какой усечённый токен случайно резолвился в путь, а не отклоняли напрямую.
 
 ## [1.0.0] - 2026-08-07
 
-Verified end to end on the full released checkpoint, and made substantially faster, with
-byte-identical output preserved at every step. The first-run experience, which was broken
-on a clean clone, now works.
+Проверено сквозным образом на полном выпущенном чекпоинте и существенно ускорено при побайтово идентичном выводе, сохраняемом на каждом шаге. Опыт первого запуска, который был сломан на чистом клоне, теперь работает.
 
-### Added
+### Добавлено
 
-- **`--preset auto`**: sizes the trunk and expert-cache budgets from the machine's own free
-  RAM, trunk-first, so a user need not pick a preset by hand. A gigabyte given to the trunk
-  is worth far more than a gigabyte of expert cache, and auto pins accordingly, capping the
-  pin below the RAM ceiling after a heavy-pin regression was measured.
-- **Chunk-union prefill**: a batched-prefill MoE that fetches each unique routed expert once
-  per chunk instead of once per token, measured to read about half the expert bytes on a
-  prompt, with the generated token bit-identical to the per-token path.
-- **Conversation resume** (`--save-state` / `--load-state`): carries the recurrent state and
-  KV cache to disk so a second turn resumes instead of re-reading the whole prompt, measured
-  3.9x faster on turn two with identical output. Refuses to restore state from a different
-  architecture.
-- **`--spec N`**: speculative decode by n-gram drafting with batched greedy verification;
-  output is exactly the serial greedy decode by construction.
-- `--tf-check`, teacher-forced agreement over an id sequence in one sweep, for measuring
-  draft quality; `tools/qdq_trunk.py` and `tools/int8_trunk.py` for deriving quantized
-  trunks.
+- **`--preset auto`**: подбирает бюджеты trunk и кэша экспертов из собственной свободной RAM машины, trunk-first, чтобы пользователю не нужно было выбирать пресет вручную. Гигабайт, отданный trunk, стоит far more гигабайта кэша экспертов, и auto закрепляет соответственно, ограничивая закрепление ниже потолка RAM после того, как была измерена heavy-pin регрессия.
+- **Chunk-union prefill**: пакетный prefill MoE, который забирает каждого уникального маршрутизируемого эксперта один раз на чанк вместо раза на токен, измерено читает примерно вдвое меньше байт экспертов на промпте, при сгенерированном токене побитово идентичном потóковому пути.
+- **Возобновление диалога** (`--save-state` / `--load-state`): переносит рекуррентное состояние и KV-кэш на диск, чтобы второй ход возобновлялся вместо перечитывания всего промпта, измерено в 3,9× быстрее на втором ходе при идентичном выводе. Отказывается восстанавливать состояние из другой архитектуры.
+- **`--spec N`**: speculative decode через n-граммный драфтинг с пакетной жадной верификацией; вывод точно равен последовательному жадному декодингу по построению.
+- `--tf-check`, teacher-forced agreement по последовательности id за один проход, для измерения качества драфта; `tools/qdq_trunk.py` и `tools/int8_trunk.py` для получения квантованных trunk'ов.
 
-### Changed
+### Изменено
 
-- **Fused matmul kernels** (fp32, bf16, MXFP4): sixteen partitioned accumulators with
-  explicitly fused products, taking the trunk matmul to its memory floor (about eight times
-  less per-token compute) while keeping the scalar and AVX2 paths bitwise identical.
-- **KDA recurrence parallelised over heads**, bit-identical to the serial form.
-- `scripts/k3-doctor.sh` per-preset speed expectations refreshed to the v1.0.0 numbers, with
-  the streaming presets noted as disk-bound and the resident tier as compute-bound.
+- **Слитые (fused) ядра matmul** (fp32, bf16, MXFP4): шестнадцать партиционированных аккумуляторов с явно слитыми произведениями, доводящие trunk matmul до его memory floor (примерно в восемь раз меньше вычислений на токен) при сохранении побитовой идентичности скалярного и AVX2-путей.
+- **KDA-рекуррентность распараллелена по головам**, побитово идентично последовательной форме.
+- `scripts/k3-doctor.sh` — ожидания скорости per-preset обновлены до чисел v1.0.0, со стриминговыми пресетами, отмеченными как disk-bound, и резидентным tier как compute-bound.
 
-### Fixed
+### Исправлено
 
-- All shell scripts are committed executable; the first documented command no longer fails
-  with Permission denied on a clean clone.
-- `scripts/download-model.sh` uses the current `hf` CLI and pins an immutable revision with
-  checksum verification; it no longer attempts a pip install that cannot succeed on the
-  target OS, and refuses to start without free space for the checkpoint.
-- `scripts/k3-doctor.sh` no longer fails a machine that can build and test the engine; the
-  memory floor is a warning about running the checkpoint, not a hard stop.
-- The config-refusal fixtures the docs describe now exist and are gated in `make test`,
-  ctest and CI; the tokenizer leg reports NOT RUN rather than passing silently; CI runs
-  `make test` rather than a hand-picked subset.
-- A silent-corruption path in the MLA KV overflow and one in the single-slot trunk reader,
-  both of which could emit a plausible wrong token, now abort or are prevented.
-- The MXFP4 packer alignment and the tiny-checkpoint scale rule.
+- Все shell-скрипты закоммичены исполняемыми; первая документированная команда больше не падает с Permission denied на чистом клоне.
+- `scripts/download-model.sh` использует текущий `hf` CLI и фиксирует immutable ревизию с верификацией контрольной суммы; больше не пытается pip install, который не может успеть на целевой OS, и отказывается стартовать без свободного места под чекпоинт.
+- `scripts/k3-doctor.sh` больше не валит машину, которая может собрать и протестировать движок; нижняя граница памяти — предупреждение о запуске чекпоинта, а не жёсткая остановка.
+- Фикстуры отказа конфигурации, которые описывают доки, теперь существуют и gated в `make test`, ctest и CI; часть токенизатора сообщает NOT RUN вместо тихого прохождения; CI запускает `make test`, а не hand-picked подмножество.
+- Путь тихой порчи в переполнении MLA KV и один в однолотовом читателе trunk, оба из которых могли выдать правдоподобный неверный токен, теперь abort'ятся или предотвращены.
+- Выравнивание пакера MXFP4 и правило масштаба tiny-чека.
 
-### Research notes, not shipped as features
+### Заметки исследования, не отгруженные как фичи
 
-- Lossless trunk compression and a quantized-self-draft hybrid were both built and measured,
-  and both turned out to help only narrow regimes. The findings and prototypes are kept in
-  [`docs/notes/`](docs/notes/).
+- Сжатие trunk без потерь и квантованный self-draft гибрид оба были собраны и измерены, и оба помогли лишь в узких режимах. Находки и прототипы сохранены в [`docs/notes/`](docs/notes/).
 
 ## [0.1.0] - 2026-07-31
 
-First public release.
+Первый публичный релиз.
 
-### Added
+### Добавлено
 
-- Full 93-layer Kimi K3 inference: 69 KDA + 24 Gated MLA layers, 896 routed experts with
-  top-16 selection, SiTU-GLU, Attention Residuals, native MXFP4 expert weights.
-- **Trunk streaming**, which turns the memory budget into a dial rather than a floor. The
-  model runs in 8 GB and in 224 GB and produces byte-identical output at every budget
-  measured in between.
-- MXFP4 matmul that consumes packed nibbles directly, never materialising a dequantised
-  expert.
-- BPE tokenizer in C, reading the released `tiktoken.model` directly, text in, text out
-  with no external step.
-- Config reader that loads the checkpoint's own `config.json` and **refuses** a config it
-  cannot fully understand rather than defaulting missing fields.
-- Incremental decode with a KV cache and carried recurrent state, verified to produce the
-  same tokens as full recompute.
-- Named memory presets (`--preset laptop|desktop|workstation|server|max`) derived from
-  the measured memory ladder.
-- `scripts/k3-doctor.sh`, reports whether a machine can run the model, which preset
-  fits, and how fast its storage is.
-- `scripts/download-model.sh`, fetches the checkpoint and verifies it byte-exactly
-  against the published total, because a partial download produces wrong output silently.
-- Test suite that runs entirely without model weights: op fixtures, expert cache,
-  safetensors reader, config reader, and end-to-end oracle gates (teacher forcing,
-  greedy decode, and incremental decode).
-- CI: build matrix across GCC and Clang, warnings-as-errors, ASan and UBSan, Python and
-  shell lint. Tokenizer parity is built and reported but CANNOT gate on a clean
-  checkout, because it needs the vocabulary that ships with the model weights; run
-  `make tok` locally against a downloaded checkpoint.
+- Полный 93-слойный вывод Kimi K3: 69 KDA + 24 Gated MLA слоя, 896 маршрутизируемых экспертов с выбором top-16, SiTU-GLU, Attention Residuals, нативные MXFP4-веса экспертов.
+- **Стриминг trunk**, который превращает бюджет памяти в регулятор, а не в нижнюю границу. Модель работает в 8 ГБ и в 224 ГБ и выдаёт побайтово идентичный вывод на каждом измеренном бюджете между ними.
+- MXFP4 matmul, потребляющий упакованные нибблы напрямую, никогда не материализующий деквантованного эксперта.
+- BPE-токенизатор на C, читающий выпущенный `tiktoken.model` напрямую, текст на входе, текст на выходе без внешнего шага.
+- Загрузчик конфигурации, который загружает собственный `config.json` чекпоинта и **отказывается** от конфигурации, которую не может полностью понять, вместо подстановки отсутствующих полей.
+- Инкрементальный декодинг с KV-кэшем и переносимым рекуррентным состоянием, проверенный на выдачу тех же токенов, что и полное перевычисление.
+- Именованные пресеты памяти (`--preset laptop|desktop|workstation|server|max`), выведенные из измеренной лестницы памяти.
+- `scripts/k3-doctor.sh` — сообщает, может ли машина запустить модель, какой пресет подходит и насколько быстро её хранилище.
+- `scripts/download-model.sh` — скачивает чекпоинт и сверяет его побайтово с опубликованным суммарным объёмом, потому что частичная загрузка молча даёт неверный вывод.
+- Набор тестов, запускаемый полностью без весов модели: фикстуры операций, кэш экспертов, читатель safetensors, читатель конфигурации и сквозные oracle-проверки (teacher forcing, жадный декодинг и инкрементальный декодинг).
+- CI: матрица сборки на GCC и Clang, warnings-as-errors, ASan и UBSan, линтинг Python и shell. Паритет токенизатора собирается и сообщается, но НЕ может быть gate на чистом checkout, потому что ему нужен словарь, поставляемый с весами модели; запустите `make tok` локально против скачанного чекпоинта.
 
-### Known limitations
+### Известные ограничения
 
-- No chunked prefill, so long prompts are impractical despite a 32k context ceiling.
-- Greedy decoding only; no chat template; no serving layer; no vision; CPU only.
+- Нет чанкированного prefill, поэтому длинные промпты непрактичны несмотря на потолок контекста 32k.
+- Только жадный декодинг; нет шаблона чата; нет serving-слоя; нет vision; только CPU.
 
-See [docs/ROADMAP.md](docs/ROADMAP.md).
+См. [docs/ROADMAP.md](docs/ROADMAP.md).
 
 [Unreleased]: https://github.com/FareedKhan-dev/kimi-k3-in-c/compare/v1.1.0...HEAD
 [1.1.0]: https://github.com/FareedKhan-dev/kimi-k3-in-c/compare/v1.0.0...v1.1.0

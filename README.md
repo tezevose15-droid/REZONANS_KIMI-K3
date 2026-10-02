@@ -2,75 +2,75 @@
 
 <h1>kimi-k3-in-c</h1>
 
-<h3>A 2.78-trillion-parameter model. One CPU. 8 GB of RAM.</h3>
+<h3>Модель на 2,78 триллиона параметров. Один CPU. 8 ГБ ОЗУ.</h3>
 
-<p>Kimi K3 inference in portable C99.<br>No BLAS. No framework. No GPU.</p>
+<p>Инференс Kimi K3 на портативном C99.<br>Без BLAS. Без фреймворков. Без GPU.</p>
 
 <p>
 <a href="https://github.com/FareedKhan-dev/kimi-k3-in-c/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/FareedKhan-dev/kimi-k3-in-c/ci.yml?branch=main&style=flat-square&label=CI" alt="CI"></a>
-<a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square" alt="License"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square" alt="Лицензия"></a>
 <a href="Makefile"><img src="https://img.shields.io/badge/C99-portable-lightgrey?style=flat-square" alt="C99"></a>
-<a href="#requirements"><img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=flat-square" alt="Platform"></a>
-<a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.1.0-brightgreen?style=flat-square" alt="Version"></a>
+<a href="#requirements"><img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=flat-square" alt="Платформа"></a>
+<a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.1.0-brightgreen?style=flat-square" alt="Версия"></a>
 </p>
 
 <table>
 <tr>
-<td align="center"><b>2.78T</b><br><sub>parameters</sub></td>
-<td align="center"><b>1.56 TB</b><br><sub>checkpoint on disk</sub></td>
-<td align="center"><b>8.24 GB</b><br><sub>peak RSS, measured</sub></td>
-<td align="center"><b>176 KB</b><br><sub>the whole engine</sub></td>
-<td align="center"><b>0</b><br><sub>GPUs</sub></td>
+<td align="center"><b>2.78T</b><br><sub>параметров</sub></td>
+<td align="center"><b>1.56 TB</b><br><sub>чекпоинт на диске</sub></td>
+<td align="center"><b>8.24 GB</b><br><sub>пиковый RSS, измерено</sub></td>
+<td align="center"><b>176 KB</b><br><sub>весь движок</sub></td>
+<td align="center"><b>0</b><br><sub>GPU</sub></td>
 </tr>
 </table>
 
-<p><b>The same 2.78-trillion-parameter model, the same answer, on whatever machine you own.</b><br>More memory only buys speed:</p>
+<p><b>Та же модель на 2,78 триллиона параметров, тот же ответ — на любой вашей машине.</b><br>Больше памяти — только выше скорость:</p>
 
 <table>
 <tr>
-<th align="left">the machine you have</th>
-<th align="right">RAM</th>
-<th align="right">time per token</th>
-<th align="left">what is going on</th>
+<th align="left">ваша машина</th>
+<th align="right">ОЗУ</th>
+<th align="right">время на токен</th>
+<th align="left">что происходит</th>
 </tr>
 <tr>
-<td align="left">an ordinary laptop</td>
+<td align="left">обычный ноутбук</td>
 <td align="right">8 GB</td>
 <td align="right"><b>26.5 s</b></td>
-<td>the whole model streams off the disk on every step</td>
+<td>вся модель подгружается с диска на каждом шаге</td>
 </tr>
 <tr>
-<td align="left">a high-end laptop</td>
+<td align="left">топовый ноутбук</td>
 <td align="right">32 GB</td>
 <td align="right"><b>24.2 s</b></td>
-<td>some of the model now sits in memory</td>
+<td>часть модели уже находится в памяти</td>
 </tr>
 <tr>
-<td align="left">a desktop</td>
+<td align="left">настольный ПК</td>
 <td align="right">64 GB</td>
 <td align="right"><b>19.8 s</b></td>
-<td>more of it sits in memory</td>
+<td>ещё больше модели в памяти</td>
 </tr>
 <tr>
-<td align="left">a heavy workstation</td>
+<td align="left">мощная рабочая станция</td>
 <td align="right">128 GB+</td>
 <td align="right"><b>5.6 s</b></td>
-<td>the model fits entirely in memory, the disk wait is gone</td>
+<td>модель полностью помещается в память, ожидания диска больше нет</td>
 </tr>
 </table>
 
-<sub>Same short prompt at every size, and the output is <b>byte-identical</b> from the smallest machine to the largest; only the clock changes. One machine, 124 cores, fast NVMe drive: the first three rows still read the model from disk each step, so a slower drive is slower there, while the 128 GB+ row keeps everything in memory and no longer waits on the disk. On that same machine v1.0.0 made the math per token about <b>8&times;</b> lighter, a follow-up question in a chat <b>3.9&times;</b> faster, and long prompts about <b>half</b> as costly. (A token is roughly a short word-piece; the two runnable demos below are the original captures on a slower drive, so their clock reads a little higher.) Full data in <a href="docs/data/">docs/data/</a>.</sub>
+<sub>Тот же короткий промпт при любом объёме памяти, и вывод <b>побайтово идентичен</b> от самой маленькой машины до самой большой — меняется только время. Одна машина, 124 ядра, быстрый NVMe-накопитель: первые три строки всё ещё читают модель с диска на каждом шаге, поэтому на более медленном диске там будет медленнее, тогда как строка 128 GB+ держит всё в памяти и больше не ждёт диск. На той же машине v1.0.0 сделала вычисления на токен примерно в <b>8&times;</b> легче, повторный вопрос в чате — в <b>3.9&times;</b> быстрее, а длинные промпты — примерно в <b>половину</b> дешевле. (Токен — это примерно короткий фрагмент слова; два запускаемых демо ниже — это оригинальные записи на более медленном диске, поэтому время там чуть выше.) Полные данные — в <a href="docs/data/">docs/data/</a>.</sub>
 
 <hr>
 
 <p>
   <img src="docs/images/patrick_pray.png" height="44" align="middle" alt="">
-  <i>I am open to AI research roles and PhD positions. <a href="https://drive.google.com/file/d/1yW5xHDS6Mr9ByrkCgVve85OqF4UOPv9K/view?usp=sharing">CV</a>.</i>
+  <i>Открыт к позициям в области AI-исследований и к PhD-программам. <a href="https://drive.google.com/file/d/1yW5xHDS6Mr9ByrkCgVve85OqF4UOPv9K/view?usp=sharing">Резюме</a>.</i>
 </p>
 
 <hr>
 
-<sub>The macOS, Windows and NEON ports, chat mode, the <code>ultra</code> preset, the faster MXFP4 kernels and a long list of parser fixes came from the people below. <a href="CONTRIBUTORS.md">Who did what</a>.</sub>
+<sub>Порты под macOS, Windows и NEON, режим чата, пресет <code>ultra</code>, более быстрые ядра MXFP4 и длинный список исправлений парсера — всё это сделали люди, указанные ниже. <a href="CONTRIBUTORS.md">Кто что сделал</a>.</sub>
 
 <p>
 <a href="https://github.com/douglasmun"><img src="https://avatars.githubusercontent.com/u/12515041?v=4&s=96" width="48" height="48" alt="douglasmun" title="douglasmun"></a>
@@ -98,9 +98,7 @@
 
 </div>
 
-<br>
-
-```console
+<br>```console
 $ ./bin/k3 ~/k3model --trunk ~/k3trunk --preset laptop \
            --tok ~/k3model --prompt "The capital of France is" --gen 8 --incremental
 
@@ -110,14 +108,7 @@ $ ./bin/k3 ~/k3model --trunk ~/k3trunk --preset laptop \
 ----------------------
 8 tokens in 261.5 s, 32.69 s/token average
 PEAK RSS for the whole run: 8.24 GB
-```
-
-Slow, and answering correctly, in 8.24 GB, from a checkpoint of 1.56 TB. This particular
-batch command deliberately asks for a raw continuation. The official Kimi K3 checkpoint
-is also chat-capable; use the XTML REPL below when you want answers and multi-turn history.
-Give the same batch request more memory and the answer does not change, only the clock:
-
-```console
+```Медленно и отвечая правильно, в 8.24 GB, из чекпоинта размером 1.56 TB. Данная batch-команда намеренно запрашивает сырое продолжение. Официальный чекпоинт Kimi K3 также поддерживает чат; используйте XTML REPL ниже, когда вам нужны ответы и история многошагового диалога. Выделите тому же batch-запросу больше памяти — ответ не изменится, изменится только время:```console
 $ ./bin/k3 ~/k3model --trunk ~/k3trunk --preset server \
            --tok ~/k3model --prompt "def fibonacci(n):" --gen 28 --incremental
 
@@ -129,131 +120,116 @@ $ ./bin/k3 ~/k3model --trunk ~/k3trunk --preset server \
 ----------------------
 28 tokens in 299.3 s, 10.69 s/token average
 PEAK RSS for the whole run: 127.92 GB
-```
-
-Every figure in this document comes from the measurement output in
+```Каждая иллюстрация в этом документе взята из результатов измерений в
 [`docs/data/`](docs/data/).
 
-![A small resident working set on top, the model itself on NVMe underneath, and a few labelled pipes between them](docs/images/main_architecture_with_spongbob.png)
+![Небольшой резидентный рабочий набор наверху, сама модель на NVMe внизу и несколько подписанных каналов между ними](docs/images/main_architecture_with_spongbob.png)
 
-The dense trunk stays in memory to whatever depth you choose and streams the rest; the
-1.45 TB of routed experts are never resident, and are multiplied straight out of their
-packed 4-bit form. The consequence is that **the same model runs in 8 GB and in 224 GB and
-produces byte-identical output at every budget between.**
+Плотный ствол остаётся в памяти на выбранную вами глубину, а остальное подгружается потоково; 1,45 ТБ маршрутизируемых экспертов никогда не находятся в памяти постоянно и умножаются прямо из их упакованной 4-битной формы. Следствие — **одна и та же модель работает и в 8 ГБ, и в 224 ГБ и выдаёт побайтово идентичный результат при любом бюджете между ними.**
 
-Four decisions about where bytes live take it from a cluster to a laptop, and the answer
-at the bottom is the same as the answer at the top:
+Четыре решения о том, где живут байты, переносят её с кластера на ноутбук, и ответ внизу тот же, что и ответ наверху:
 
-![Four steps from a server cluster down to an ordinary laptop, with the same output at both ends](docs/images/fit_cascade.png)
+![Четыре шага от серверного кластера до обычного ноутбука, с одинаковым выводом на обоих концах](docs/images/fit_cascade.png)
 
-[Part II](#part-ii-how-it-works) builds every box in both diagrams from scratch, one
-component at a time.
+[Часть II](#part-ii-how-it-works) собирает каждый блок на обеих диаграммах с нуля, по одному компоненту за раз.
 
 ---
 
-## Contents
+## Содержание
 
-**[Part I: Getting started](#part-i-getting-started)**
+**[Часть I: Начало работы](#part-i-getting-started)**
 
-- [Requirements](#requirements)
-- [Quick start](#quick-start): clone, build and verify in about a minute, with no model
-- [Full setup](#full-setup): the whole path to generated text
-- [Usage](#usage)
-  - [Synopsis](#synopsis)
-  - [Prompt options](#prompt-options)
-  - [Memory options](#memory-options)
-  - [Generation options](#generation-options)
-  - [Diagnostic options](#diagnostic-options)
-  - [Exit codes](#exit-codes)
-  - [Environment variables](#environment-variables)
-  - [Worked examples](#worked-examples)
-- [Choosing a preset](#choosing-a-preset)
-- [Reading the run report](#reading-the-run-report)
-- [Common questions](#common-questions)
+- [Требования](#requirements)
+- [Быстрый старт](#quick-start): клонирование, сборка и проверка примерно за минуту, без модели
+- [Полная настройка](#full-setup): весь путь до генерации текста
+- [Использование](#usage)
+  - [Синопсис](#synopsis)
+  - [Опции промпта](#prompt-options)
+  - [Опции памяти](#memory-options)
+  - [Опции генерации](#generation-options)
+  - [Диагностические опции](#diagnostic-options)
+  - [Коды выхода](#exit-codes)
+  - [Переменные окружения](#environment-variables)
+  - [Разобранные примеры](#worked-examples)
+- [Выбор пресета](#choosing-a-preset)
+- [Чтение отчёта о запуске](#reading-the-run-report)
+- [Частые вопросы](#common-questions)
 
-**[Part II: How it works](#part-ii-how-it-works)**
+**[Часть II: Как это работает](#part-ii-how-it-works)**
 
-- [The problem: a model that does not fit](#the-problem-a-model-that-does-not-fit)
-- [The four reductions](#the-four-reductions)
-- [The machine, and what it assumes](#the-machine-and-what-it-assumes)
-- [The codebase](#the-codebase)
-- [Three invariants](#three-invariants)
-- [1. Reading a 1.56 TB checkpoint from its headers](#1-reading-a-156-tb-checkpoint-from-its-headers)
-- [2. The config reader that refuses to guess](#2-the-config-reader-that-refuses-to-guess)
-- [3. The tokenizer, byte for byte](#3-the-tokenizer-byte-for-byte)
-- [4. Reduction one: the experts already ship at half a byte](#4-reduction-one-the-experts-already-ship-at-half-a-byte)
-- [5. Kernels with a floating point contract](#5-kernels-with-a-floating-point-contract)
-- [6. Reduction two: KDA, attention with a memory that never grows](#6-reduction-two-kda-attention-with-a-memory-that-never-grows)
-- [7. Reduction three: MLA, one latent instead of ninety-six heads](#7-reduction-three-mla-one-latent-instead-of-ninety-six-heads)
-- [8. Attention residuals: layers that look back](#8-attention-residuals-layers-that-look-back)
-- [9. Picking 16 experts of 896](#9-picking-16-experts-of-896)
-- [10. Packing the trunk: 93 layers, one read each](#10-packing-the-trunk-93-layers-one-read-each)
-- [11. Reduction four: streaming the trunk turns a floor into a dial](#11-reduction-four-streaming-the-trunk-turns-a-floor-into-a-dial)
-- [12. An LRU cache for the experts](#12-an-lru-cache-for-the-experts)
-- [13. How big should that cache be? Ask the trace](#13-how-big-should-that-cache-be-ask-the-trace)
+- [Проблема: модель, которая не помещается](#the-problem-a-model-that-does-not-fit)
+- [Четыре сокращения](#the-four-reductions)
+- [Машина и её допущения](#the-machine-and-what-it-assumes)
+- [Кодовая база](#the-codebase)
+- [Три инварианта](#three-invariants)
+- [1. Чтение чекпоинта 1,56 ТБ по его заголовкам](#1-reading-a-156-tb-checkpoint-from-its-headers)
+- [2. Ридер конфига, который отказывается гадать](#2-the-config-reader-that-refuses-to-guess)
+- [3. Токенизатор, байт в байт](#3-the-tokenizer-byte-for-byte)
+- [4. Сокращение первое: эксперты уже поставляются по полбайта](#4-reduction-one-the-experts-already-ship-at-half-a-byte)
+- [5. Ядра с контрактом на плавающую точку](#5-kernels-with-a-floating-point-contract)
+- [6. Сокращение второе: KDA, attention с памятью, которая никогда не растёт](#6-reduction-two-kda-attention-with-a-memory-that-never-grows)
+- [7. Сокращение третье: MLA, один латент вместо девяноста шести голов](#7-reduction-three-mla-one-latent-instead-of-ninety-six-heads)
+- [8. Остаточные связи attention: слои, которые оглядываются назад](#8-attention-residuals-layers-that-look-back)
+- [9. Выбор 16 экспертов из 896](#9-picking-16-experts-of-896)
+- [10. Упаковка ствола: 93 слоя, по одному чтению на каждый](#10-packing-the-trunk-93-layers-one-read-each)
+- [11. Сокращение четвёртое: потоковая передача ствола превращает порог в регулятор](#11-reduction-four-streaming-the-trunk-turns-a-floor-into-a-dial)
+- [12. LRU-кэш для экспертов](#12-an-lru-cache-for-the-experts)
+- [13. Каким должен быть этот кэш? Спросите у трейса](#13-how-big-should-that-cache-be-ask-the-trace)
 
-**[Part III: Validation](#part-iii-validation)**
+**[Часть III: Валидация](#part-iii-validation)**
 
-- [The gate ladder](#the-gate-ladder)
-- [A tiny oracle first](#a-tiny-oracle-first)
-- [Proving it on the full checkpoint](#proving-it-on-the-full-checkpoint)
-- [The first tokens](#the-first-tokens)
-- [Sustained generation: text in, text out](#sustained-generation-text-in-text-out)
+- [Лестница гейтов](#the-gate-ladder)
+- [Сначала крошечный оракул](#a-tiny-oracle-first)
+- [Доказательство на полном чекпоинте](#proving-it-on-the-full-checkpoint)
+- [Первые токены](#the-first-tokens)
+- [Устойчивая генерация: текст на входе, текст на выходе](#sustained-generation-text-in-text-out)
 
-**[Part IV: Measurements](#part-iv-measurements)**
+**[Часть IV: Измерения](#part-iv-measurements)**
 
-- [The memory ladder: 8 GB to 224 GB](#the-memory-ladder-8-gb-to-224-gb)
-- [The cache that was not participating](#the-cache-that-was-not-participating)
-- [Allocation beats capacity](#allocation-beats-capacity)
-- [Measuring the measurement](#measuring-the-measurement)
-- [Storage is the whole game](#storage-is-the-whole-game)
-- [Why the trunk is not quantised](#why-the-trunk-is-not-quantised)
+- [Лестница памяти: от 8 ГБ до 224 ГБ](#the-memory-ladder-8-gb-to-224-gb)
+- [Кэш, который не участвовал](#the-cache-that-was-not-participating)
+- [Распределение важнее объёма](#allocation-beats-capacity)
+- [Измерение измерения](#measuring-the-measurement)
+- [Хранилище — это вся игра](#storage-is-the-whole-game)
+- [Почему ствол не квантуется](#why-the-trunk-is-not-quantised)
 
-**[Part V: Reference](#part-v-reference)**
+**[Часть V: Справочник](#part-v-reference)**
 
-- [Scope](#scope)
-- [Closing the ledger](#closing-the-ledger)
-- [Documentation](#documentation)
-- [Development](#development)
-- [Star history](#star-history)
-- [License](#license)
+- [Область применения](#scope)
+- [Закрытие реестра](#closing-the-ledger)
+- [Документация](#documentation)
+- [Разработка](#development)
+- [История звёзд](#star-history)
+- [Лицензия](#license)
 
 ---
 
-# Part I: Getting started
+# Часть I: Начало работы
 
-## Requirements
+## Требования
 
-The gate is storage: **the checkpoint is 1.56 TB.** Everything else is ordinary.
+Узкое место — хранилище: **чекпоинт — 1,56 ТБ.** Всё остальное — обычно.
 
 | | | |
 |---|---|---|
-| **OS** | Linux, x86-64 (reference); macOS/arm64 and Windows/x86-64 also build and pass every gate | uses `O_DIRECT`, `posix_memalign`, `getrusage` -- ported for Windows via MSYS2's MinGW-w64 (see `src/io/k3_portable_io.h`) |
-| **CPU** | AVX2 + FMA on x86-64, NEON on arm64 | AVX-512 unnecessary. `make portable` targets generic AVX2 on x86-64 |
-| **RAM** | 8 GB and up | every preset works; more memory is faster, never different |
-| **Storage** | ~1.7 TB free | 1.56 TB checkpoint + 109 GB packed trunk, ideally on fast local disk |
-| **Toolchain** | GCC ≥ 9 or Clang ≥ 10 | GNU make, or CMake |
-| **Python** | 3.9+ | for the download, pack and analysis tools; not for `make test` |
+| **ОС** | Linux, x86-64 (эталон); macOS/arm64 и Windows/x86-64 также собираются и проходят все гейты | uses `O_DIRECT`, `posix_memalign`, `getrusage` -- портировано для Windows через MSYS2 MinGW-w64 (см. `src/io/k3_portable_io.h`) |
+| **ЦП** | AVX2 + FMA на x86-64, NEON на arm64 | AVX-512 не требуется. `make portable` нацелена на generic AVX2 на x86-64 |
+| **ОЗУ** | от 8 ГБ и выше | каждый пресет работает; больше памяти — быстрее, но результат тот же |
+| **Хранилище** | ~1,7 ТБ свободно | чекпоинт 1,56 ТБ + 109 ГБ упакованного ствола, желательно на быстром локальном диске |
+| **Тулчейн** | GCC ≥ 9 или Clang ≥ 10 | GNU make или CMake |
+| **Python** | 3.9+ | для инструментов загрузки, упаковки и анализа; не требуется для `make test` |
 
-The tokenizer and config reader are portable C99 and build anywhere. Without a checkpoint
-you can still do everything in [Quick start](#quick-start).
+Токенизатор и ридер конфига — переносимый C99 и собираются где угодно. Без чекпоинта вы всё равно можете сделать всё из раздела [Быстрый старт](#quick-start).
 
-## Quick start
+## Быстрый старт
 
-Clone, build and run the entire test suite. **No checkpoint, no network, no Python**. The
-whole thing takes about a minute.
-
-```bash
+Клонируйте, соберите и запустите весь набор тестов. **Без чекпоинта, без сети, без Python**. Всё это занимает около минуты.```bash
 git clone https://github.com/FareedKhan-dev/kimi-k3-in-c.git
 cd kimi-k3-in-c
 
 make -j            # seconds. Seven C files, a compiler and OpenMP
 make test          # under a minute
-```
-
-It ends like this, or it failed:
-
-```
+```Заканчивается так, либо произошла ошибка:```
 GATE 1  teacher forcing : 32/32 positions match tf_pred
         generated span  : 20/20  <- must be exact
 GATE 2  greedy decode   : 20/20 generated tokens match full_ids
@@ -262,157 +238,82 @@ GATE 3  incremental    : 20/20 generated tokens match full_ids  <- KV cache + ca
 VERDICT: ENGINE MATCHES THE REFERENCE EXACTLY
 
 ALL WEIGHTLESS TESTS PASSED
-```
+```Это и есть весь движок: каждое ядро, потоковый кэш, ридер safetensors, ридер конфига, токенизатор и сквозной оракул на 13-слойной модели, собранной с тем же графом тензоров, что и релизная, сверенный с PyTorch-референсом из фикстур, закоммиченных в репозиторий.
 
-That is the whole engine: every kernel, the streaming cache, the safetensors reader, the
-config reader, the tokenizer, and an end-to-end oracle over a 13-layer model built with the
-same tensor graph as the released one, checked against a PyTorch reference from fixtures
-committed to the repository.
-
-One published measurement also replays on the spot, from a trace recorded during a full
-93-layer run (this one needs Python 3.9+ and numpy):
-
-```bash
+Одно из опубликованных измерений также воспроизводится на месте, по трейсу, записанному во время полного прогона на 93 слоях (для этого нужен Python 3.9+ и numpy):```bash
 python3 tools/sim_cache.py tests/fixtures/expert_trace.bin
-```
-
-100,096 expert requests, reprinting the capacity table in
+```100 096 запросов к экспертам, с повторной печатью таблицы ёмкости из
 [`expert-cache-capacity.txt`](docs/data/expert-cache-capacity.txt).
 
-## Full setup
+## Полная настройка
 
-Six steps from an empty directory to generated text. Only step 4 is slow.
+Шесть шагов от пустой директории до сгенерированного текста. Медленный только шаг 4.
 
-`./scripts/k3-doctor.sh` can be run at any point. It checks the toolchain, sizes your RAM
-to a preset, measures your storage, and prints the exact command to run next.
+Скрипт `./scripts/k3-doctor.sh` можно запускать в любой момент. Он проверяет тулчейн, подбирает пресет под объём вашей RAM, замеряет диск и выводит точную команду для следующего шага.
 
-### Step 0. clone
-
-```bash
+### Шаг 0. Клонирование```bash
 git clone https://github.com/FareedKhan-dev/kimi-k3-in-c.git
 cd kimi-k3-in-c
-```
+```Около 45 МБ, в основном диаграммы и тестовые фикстуры.
 
-About 45 MB, most of it the diagrams and the test fixtures.
-
-### Step 1. check the machine
-
-```bash
+### Шаг 1. Проверка машины```bash
 ./scripts/k3-doctor.sh
-```
+```Займёт около минуты — измеряет диск тем же способом, каким движок его читает. Завершается с ненулевым кодом, если машина вообще не способна запустить модель.
 
-Takes about a minute, because it measures your disk the way the engine reads it. It exits
-non-zero if the machine cannot run the model at all.
-
-### Step 2. build
-
-```bash
+### Шаг 2. Сборка```bash
 make -j
-```
-
-Seconds. The only dependencies are a C99 compiler, libm and OpenMP. CMake works too:
-
-```bash
+```Секунды. Единственные зависимости — компилятор C99, libm и OpenMP. CMake тоже подойдёт:```bash
 cmake -B build && cmake --build build -j && ctest --test-dir build
-```
-
-### Step 3. verify before downloading anything
-
-```bash
+```### Шаг 3. Проверка перед скачиванием```bash
 make test
-```
+```Стоит сделать до того, как качать 1,56 ТБ: это доказывает, что движок совпадает с референсом на модели с тем же графом тензоров, и для этого не нужно ничего, кроме репозитория.
 
-This is worth doing before committing to a 1.56 TB download: it proves the engine matches
-its reference on a model with the same tensor graph, and it needs nothing but the
-repository.
+### Шаг 4. Скачивание чекпоинта
 
-### Step 4. fetch the checkpoint
-
-**1.56 TB, so hours rather than minutes.** Get a token from
-[huggingface.co/settings/tokens](https://huggingface.co/settings/tokens):
-
-```bash
+**1,56 ТБ — значит часы, а не минуты.** Получите токен на
+[huggingface.co/settings/tokens](https://huggingface.co/settings/tokens):```bash
 export HF_TOKEN=hf_your_token_here          # read from the environment, never echoed
 ./scripts/download-model.sh ~/k3model       # resumable, re-run to continue
-```
-
-The script finishes by verifying the shard count, the exact byte total, and then every
-individual per-shard size against the published figures:
-
-```text
+```Скрипт завершается проверкой количества шардов, точного суммарного объёма и затем каждого шарда по отдельности — сверяет размеры с опубликованными значениями:```text
 verifying…
   shards : 96 (expect 96)
   bytes  : 1560936091448 (expect 1560936091448)
   shards : all 96 match their published sizes individually
   RESULT : byte-exact match
-```
+```Частичное скачивание не падает громко — оно выдаёт неверные токены. Считайте `FAIL` здесь остановкой. Проверка пошардно ещё и превращает «перекачать 1,56 терабайта» в «перекачать вот этот один файл на 17 гигабайт», и ловит единственный случай, который не ловит сумма: два шарда ошиблись в противоположные стороны на одну и ту же величину.
 
-A partial download does not fail loudly; it produces wrong tokens. Treat a `FAIL` here as
-a stop. Checking per shard also turns "re-download 1.56 terabytes" into "re-download this
-one 17 gigabyte file", and it catches the one case a total cannot: two shards wrong in
-opposite directions by the same amount.
-
-### Step 5. pack the trunk
-
-```bash
+### Шаг 5. Упаковка ствола (trunk)```bash
 ./scripts/pack-trunk.sh ~/k3model ~/k3trunk
-```
+```Около четырёх минут, один раз. Переписывает 93 плотных слоя в один файл на 109 ГБ, где слой *L* лежит по известному смещению и читается за один вызов. **Именно это превращает требование к памяти в регулятор.** Кладите результат на самый быстрый диск, который у вас есть.
 
-About four minutes, once. It rewrites the 93 dense layers into one 109 GB file where layer
-*L* lives at a known offset and can be read in a single call. **This is what turns the
-memory requirement into a dial.** Put the output on the fastest disk you have.
-
-### Step 6. run
-
-```bash
+### Шаг 6. Запуск```bash
 ./bin/k3 ~/k3model --trunk ~/k3trunk --preset workstation \
          --tok ~/k3model --prompt "The capital of France is" --gen 8 --incremental
-```
+```Токенизатор поставляется вместе с чекпоинтом — именно поэтому `--tok` указывает на директорию модели.
 
-The tokenizer ships with the checkpoint, which is why `--tok` points at the model
-directory.
-
-### Where everything ends up
-
-```
+### Куда всё попадает```
 kimi-k3-in-c/    ~45 MB   source, docs, images, and bin/k3
 ~/k3model/      1.56 TB   96 shards · config.json · tiktoken.model · tokenizer_config.json
 ~/k3trunk/       109 GB   trunk.bin · trunk.json, on the fastest disk you have
-```
+```Первый токен любого запуска загружает с диска каждый закреплённый (pinned) слой — около 108 ГБ на пресете `server`, поэтому он занимает куда больше времени, чем установившийся темп. Эта цена платится один раз за запуск, а не за каждый токен.
 
-The first token of any run loads every pinned layer from disk, about 108 GB at the
-`server` preset, so it takes far longer than the steady rate. That cost is paid once per
-run, not once per token.
+## Использование
 
-## Usage
-
-### Synopsis
-
-```
+### Краткая сводка (Synopsis)```
 k3 <model_dir> [prompt] [memory] [generation] [diagnostics]
-```
-
-`<model_dir>` is the directory holding the `.safetensors` shards. It is required for any
-run, but `--help`, `--version` and `--list-presets` work without it:
-
-```bash
+````<model_dir>` — директория с шардами `.safetensors`. Она обязательна для любого запуска, но `--help`, `--version` и `--list-presets` работают и без неё:```bash
 ./bin/k3 --help
 ./bin/k3 --version
 ./bin/k3 --list-presets
-```
+```### Опции промпта
 
-### Prompt options
+Вне `--chat` ровно один из этих вариантов обязателен. Отсутствие любого или указание более одного — ошибка использования (код выхода 2).
 
-Outside `--chat`, exactly one of these is required. Passing none, or more than one, is a
-usage error (exit 2).
-
-| flag | argument | |
+| флаг | аргумент | |
 |---|---|---|
-| `--prompt` | `TEXT` | tokenize TEXT and run it. **Requires `--tok`.** |
-| `--prompt-file` | `PATH` | tokenize the file's bytes. **Requires `--tok`.** Preferred for anything non-ASCII: the shell re-encodes `argv`, whereas a file is read verbatim |
-| `--ids` | `1,2,3` | token ids directly. No tokenizer is loaded at all, so this works on a machine with no tokenizer files. The reproducible channel the tests use |
-
-```bash
+| `--prompt` | `TEXT` | токенизировать TEXT и запустить. **Требует `--tok`.** |
+| `--prompt-file` | `PATH` | токенизировать байты файла. **Требует `--tok`.** Предпочтителен для всего не-ASCII: шелл перекодирует `argv`, а файл читается побайтово без изменений |
+| `--ids` | `1,2,3` | токены напрямую по id. Токенизатор вообще не загружается, поэтому работает даже на машине без файлов токенизатора. Воспроизводимый канал, который используют тесты |```bash
 # text in
 ./bin/k3 ~/k3model --tok ~/k3model --prompt "The capital of France is" ...
 
@@ -422,136 +323,39 @@ printf 'La capitale de la France est' > /tmp/p.txt
 
 # ids in, ids out, no tokenizer needed
 ./bin/k3 ~/k3model --ids 1008,10484,318,15383,387 ...
-```
+```### Опции памяти
 
-### Memory options
-
-| flag | argument | default | |
+| флаг | аргумент | по умолчанию | |
 |---|---|---|---|
-| `--preset` | `NAME` | none | `laptop` · `desktop` · `workstation` · `server` · `max`. Sets both budgets below |
-| `--trunk` | `DIR` | off | the packed trunk directory from step 5. **This is what enables streaming.** Without it the trunk loads fully resident, around 113.5 GB |
-| `--trunk-gb` | `X` | 16 | budget for pinned layers plus the streaming ring |
-| `--cache-gb` | `X` | 64 | budget for the routed-expert LRU cache |
-| `--trunk-ring` | `N` | 2 | streaming ring slots: one layer being computed on, the rest reads in flight. Each extra slot costs one slot of RAM, and the budget still wins if it does not fit |
-| `--threads` | `N` | physical cores | OpenMP threads. On Linux the default is the physical core count rather than OpenMP's one thread per logical CPU, which is slower here on SMT parts. `OMP_NUM_THREADS`, if set, is respected |
-| `--ultra-low-memory` | none | off | stream exact embedding rows and lm_head chunks; full recompute also reuses one recurrent-state slot. Requires `--trunk` |
+| `--preset` | `ИМЯ` | нет | `laptop` · `desktop` · `workstation` · `server` · `max`. Задаёт оба бюджета ниже |
+| `--trunk` | `ДИРЕКТОРИЯ` | выкл | директория с упакованным стволом из шага 5. **Именно это включает потоковую загрузку.** Без неё ствол загружается полностью резидентно, около 113.5 ГБ |
+| `--trunk-gb` | `X` | 16 | бюджет под закреплённые слои плюс кольцо потоковой загрузки |
+| `--cache-gb` | `X` | 64 | бюджет под LRU-кэш маршрутизируемых экспертов |
+| `--trunk-ring` | `N` | 2 | слоты кольца потоковой загрузки: один слой считается, остальные читаются параллельно. Каждый дополнительный слот стоит один слот RAM, и бюджет всё равно побеждает, если не помещается |
+| `--threads` | `N` | число физ. ядер | потоки OpenMP. На Linux по умолчанию — число физических ядер, а не «один поток на логическое ядро» как у OpenMP, что здесь на SMT-процессорах медленнее. `OMP_NUM_THREADS`, если задана, соблюдается |
+| `--ultra-low-memory` | нет | выкл | потоково читать точные строки эмбеддингов и куски lm_head; полный рекомпьют также переиспользует один слот рекуррентного состояния. Требует `--trunk` |
 
-The `ultra` preset selects `--ultra-low-memory` with a 2.5 GB trunk ring and a
-0.31 GB expert cache. It is a proof-of-life path for 8 GB-class machines, not an
-interactive-speed preset; model precision, Top-K routing and all 93 layers are unchanged.
+Пресет `ultra` выбирает `--ultra-low-memory` с кольцом ствола 2.5 ГБ и кэшем экспертов 0.31 ГБ. Это путь «хоть как-то запустилось» для машин класса 8 ГБ, а не пресет для интерактивной скорости; точность модели, маршрутизация Top-K и все 93 слоя остаются без изменений.
 
-`--preset` and the two `-gb` flags set the same two numbers, so a preset is just a
-shorthand. Order matters if you mix them: a later flag wins, so
-`--preset server --cache-gb 40` gives you the server trunk budget with a 40 GB cache.
+`--preset` и два флага `-gb` задают одни и те же два числа, так что пресет — просто сокращение. Порядок имеет значение, если вы их смешиваете: более поздний флаг побеждает, поэтому
+`--preset server --cache-gb 40` даёт бюджет ствола от сервера с кэшем 40 ГБ.
 
-> **`--preset` without `--trunk` does nothing useful.** Every preset assumes the trunk is
-> streamed. Omit `--trunk` and the engine loads all 113.5 GB resident regardless of the
-> budget you asked for.
-
-### Generation options
-
-| flag | argument | default | |
-|---|---|---|---|
-| `--gen` | `N` | 8 | tokens to generate. Ceiling 4096; prompts may be up to 32768 tokens. `--gen 0 --incremental --save-state PATH` runs only the prefill and saves its exact state, to warm a prefix once and resume it many times |
-| `--stop-id` | `N` | off | stop as soon as the model emits id `N`; repeatable, up to 8. The released checkpoint declares two end ids that disagree (163586 in `config.json`, 163585 in `tokenizer_config.json`) and emits both, so pass both |
-| `--incremental` | none | off | carry the KV cache and the recurrent state between tokens instead of re-running the whole prefix |
-| `--tok` | `DIR` | none | directory holding `tiktoken.model` and `tokenizer_config.json` |
-
-**Pass `--incremental` for any generation of length.** Without it every step re-runs the
-entire prefix, which is *O(T²)*; with it, step 0 pays for the prompt and every later step
-costs the same fixed amount. Both paths are gated on producing identical tokens, so this
-is a pure speed choice.
-
-### Text chat (official Kimi K3 XTML)
-
-K3 is chat-capable. `--chat` uses the official XTML segments and tokenizer control tokens;
-it does not fall back to ChatML or a handwritten generic prompt. Version one is text-only:
-there are no tools, images, server, or context compaction.
-
-```bash
+> **`--preset` без `--trunk` не даёт ничего полезного.** Каждый пресет предполагает, что ствол потоковый. Опустите `--trunk` — и движок загрузит все 113.5 ГБ резидентно, какой бы бюджет вы ни запросили.```bash
 ./bin/k3 ~/k3model --trunk ~/k3trunk --preset desktop --tok ~/k3model \
   --chat --system "You are a helpful assistant." \
   --history my-session.jsonl --incremental
-```
-
-The REPL accepts ordinary text plus `/help`, `/reset`, and `/exit`. It prints the complete
-canonical record, including `<think>…</think>` and `<response>…</response>`. When
-`--history` is supplied, it writes a portable, human-readable JSONL file such as:
-
-```json
+```REPL принимает обычный текст плюс `/help`, `/reset` и `/exit`. Он выводит полную каноническую запись, включая `<think>…</think>` и `<response>…</response>`. Когда указан `--history`, он пишет переносимый, человеко-читаемый JSONL-файл вроде:```json
 {"role":"system","content":"You are a helpful assistant."}
 {"role":"user","content":"Explain cache locality."}
 {"role":"assistant","content":"…","reasoning_content":"…"}
-```
+```Считайте этот файл чувствительным: он может содержать каждое сообщение пользователя и полную запись рассуждений ассистента, которая нужна K3 для честного продолжения диалога. При перезапуске движок валидирует, повторно рендерит и повторно делает префилл транскрипта; он сознательно не сериализует непрозрачное состояние KV, MLA или KDA. Внутри одной сессии под `--incremental` состояние, построенное ходом, сохраняется, и следующий ход делает префилл только своего нового хвоста, когда отрендеренный транскрипт начинается ровно с тех id, которыми кормили состояние (REPL печатает, сколько позиций было переиспользовано); `/reset` или любое иное расхождение начинает заново. Переданный `--system` должен точь-в-точь совпадать с существующей начальной системной записью. Буквальный текст контрольных маркеров в сообщениях пользователя кодируется как обычный текст, но никогда — как управляющий токен XTML.
 
-Treat that file as sensitive: it can contain every user message and the complete assistant
-reasoning record, which K3 requires to continue a conversation faithfully. On restart the
-engine validates, re-renders, and re-prefills the transcript; it deliberately does not
-serialize opaque KV, MLA, or KDA state. Within one session under `--incremental` the
-state a turn built is kept, and the next turn prefills only its new tail when the
-rendered transcript begins with exactly the ids that state was fed (the REPL prints how
-many positions were reused); `/reset` or any other divergence starts over. A supplied `--system` must exactly match an existing
-initial system record. Literal control-marker text in user messages is encoded as ordinary
-text, never as an XTML control token.
+Чат по умолчанию — `--gen 4096` и, как и пакетная генерация, жадный декодинг. Передача любого из `--temperature`, `--top-p` или `--seed` включает сэмплирование (температура `1.0`, top-p `0.95` если не указано); `--greedy` форсирует argmax даже в этом случае. Сэмплирование использует
+PCG32; `--seed N` детерминированно выводит один поток на каждый ход ассистента, так что повтор того же транскрипта с тем же seed воспроизводим. Лимиты 32K промпта / 4096 генерации — это существующие лимиты движка, а не новые лимиты чата; чат чётко падает и сохраняет историю, когда достигнут либо контекст, либо безопасное размещение KV.
 
-Chat defaults to `--gen 4096` and, like batch generation, to greedy decoding. Passing any
-of `--temperature`, `--top-p` or `--seed` turns sampling on (temperature `1.0`, top-p
-`0.95` unless given); `--greedy` forces argmax even then. Sampling uses
-PCG32; `--seed N` deterministically derives one stream per assistant turn, so replaying the
-same transcript with the same seed is reproducible. The 32K prompt / 4096 generation limits
-are existing engine limits, not new chat limits; chat fails clearly and retains the history
-when either context or safe KV allocation is reached.
+Размышление (thinking) включено по умолчанию с `thinking_effort=max` — ровно то, что делает собственный токенизатор чекпоинта, когда `apply_chat_template` ничего не получает; `--thinking-effort low` или `high` меняет только эту настройку. `--no-think` — это `thinking=False` у энкодера: нет системного сообщения о thinking_effort, предыдущие ходы ассистента рендерятся без канала размышлений, а промпт генерации сразу открывает канал ответа, так что модель отвечает мгновенно и REPL не печатает блок `<think>`. На потоковом стволе это самый большой рычаг скорости: в прогоне на реальном чекпоинте 119 из 150 токенов ответа из пяти слов были блоком размышлений. Рассуждения, уже сохранённые в транскрипте, остаются на месте и рендерятся снова при следующем запуске диалога с включённым thinking. Оба флага побайтово и по id точны относительно официального токенизатора в `tests/unit/test_chat.c`.
 
-Thinking is on by default with `thinking_effort=max`, which is exactly what the checkpoint's
-own tokenizer does when `apply_chat_template` is given nothing; `--thinking-effort low` or
-`high` changes only that setting. `--no-think` is the encoder's `thinking=False`: no
-thinking-effort system message, prior assistant turns rendered without a think channel, and
-a generation prompt that opens the response channel directly, so the model answers at once
-and the REPL prints no `<think>` block. On a streamed trunk this is the largest speed lever
-there is: in a real-checkpoint run, 119 of the 150 tokens of a five-word answer were the
-think block. Reasoning already stored in the transcript is left in place and is rendered
-again the next time the conversation runs with thinking on. Both flags are byte- and
-id-exact against the official tokenizer in `tests/unit/test_chat.c`.
-
-Chat uses the same CPU-only streamed trunk and routed-expert cache as batch mode. `--preset`,
-`--trunk-gb`, and `--cache-gb` keep exactly their existing meanings: no experts are preloaded
-and the trunk remains disk-streamed unless those existing memory flags ask otherwise.
-
-### Diagnostic options
-
-| flag | argument | |
-|---|---|---|
-| `--config` | `PATH` | model config; defaults to `<model_dir>/config.json` |
-| `--layers` | `N` | bind only the first N layers, for partial shard sets |
-| `--out` | `FILE` | JSON results (default `k3_run.json`) |
-| `--dump-logits` | `PATH` | float32 logits for the first step, for elementwise comparison |
-| `--dump-cache-trace` | `DIR` | writes `expert_hist.json` and `expert_trace.bin`, which `tools/sim_cache.py` replays |
-
-### Exit codes
-
-Scripts can rely on these.
-
-| | |
-|---:|---|
-| `0` | success |
-| `1` | a tensor failed to bind, or a forward pass failed |
-| `2` | usage error, or a config that could not be read with confidence; the engine declines to guess |
-| `3` | the run finished but the `--out` file could not be written, so the results a harness reads are missing |
-| `4` | the run finished, but at least one routed expert failed to load, so the emitted ids are unsound. Distinct from `1` because the process otherwise succeeded, and it is the code that catches silent numerical corruption |
-| `5` | stopped early by Ctrl-C. The step in flight finished, and the state file, `--out` and the reports were all written, but the token list is shorter than asked for. A second Ctrl-C kills the process instead |
-
-### Environment variables
-
-| variable | used by | |
-|---|---|---|
-| `HF_TOKEN` | `download-model.sh` | HuggingFace token, read from the environment and never echoed |
-| `OMP_NUM_THREADS` | the engine | thread count. When neither this nor `--threads` is given, Linux defaults to the physical core count |
-| `K3_TOK_FILES` | tokenizer tools and CI | directory holding `tiktoken.model`, when it is not in a default location |
-| `K3_MODEL_DIR` | `tools/budget.py` | checkpoint directory, when not given as an argument |
-
-### Worked examples
-
-```bash
+Чат использует тот же потоковый ствол на CPU и тот же кэш маршрутизируемых экспертов, что и пакетный режим. `--preset`, `--trunk-gb` и `--cache-gb` сохраняют ровно прежний смысл: эксперты не предзагружаются, а ствол остаётся потоковым с диска, если только существующие флаги памяти не просят иного.```bash
 # Full-model, one-token proof of life on an 8 GB-class ARM64 machine.
 ./bin/k3 ~/k3model --trunk ~/k3trunk --preset ultra \
          --tok ~/k3model --prompt "The capital of France is" --gen 1
@@ -591,11 +395,7 @@ python3 tools/cmp_logits.py /tmp/c_logits.bin ref_logits.json
 systemd-run --scope --user -q -p MemoryMax=8G -p MemorySwapMax=0 \
   ./bin/k3 ~/k3model --trunk ~/k3trunk --trunk-gb 2.5 --cache-gb 0.5 \
            --ids 1008,10484,318,15383,387 --gen 8 --incremental
-```
-
-## Choosing a preset
-
-```console
+```## Выбор пресета```console
 $ ./bin/k3 --list-presets
 presets (trunk / expert-cache, in GB):
   ultra          2.50 / 0.31    ~3 GB planned: streamed model tables, one state slot. Slow.
@@ -607,37 +407,19 @@ presets (trunk / expert-cache, in GB):
 
 All presets stream the trunk, so they need --trunk <packed_dir>.
 Run scripts/k3-doctor.sh to see which one this machine fits.
-```
+```![Что каждый пресет реально стоит в памяти](docs/images/preset_ladder.png)
 
-![What each preset actually costs in memory](docs/images/preset_ladder.png)
-
-The boundaries come from the measured ladder, and the doctor keys on `MemAvailable` rather
-than `MemTotal`:
-
-```bash
+Границы взяты из измеренной лесенки, а doctor ориентируется на `MemAvailable`, а не на `MemTotal`:```bash
 if   [ "$AVAIL_GB" -ge 192 ]; then PRESET=server;      EXPECT="~6 s/token"
 elif [ "$AVAIL_GB" -ge  96 ]; then PRESET=workstation; EXPECT="~6-20 s/token"
 elif [ "$AVAIL_GB" -ge  32 ]; then PRESET=desktop;     EXPECT="~24 s/token"
 elif [ "$AVAIL_GB" -ge  10 ]; then PRESET=laptop;      EXPECT="~27 s/token"
 else PRESET=""; fi
-```
+```Две вещи, которые стоит знать перед выбором:
 
-Two things worth knowing before you pick:
-
-- **`max` is not faster than `server`** in these measurements. The extra 96 GB buys nothing
-  outside the noise floor.
-- **A preset needs a little more free memory than its peak RSS.** The engine refuses any
-  plan above 95% of available memory, to leave room for everything outside the plan, so
-  `server` at about 128 GB needs roughly 135 GB available, not 128.
-- **Give the trunk memory before the expert cache.** At a fixed 128 GB budget that was
-  worth 1.69×. [Allocation beats capacity](#allocation-beats-capacity) has the data.
-
-## Reading the run report
-
-The engine prints a memory plan, then a line per generated token, then a summary. Abridged
-from a `workstation` run:
-
-```
+- **`max` в этих замерах не быстрее `server`**. Дополнительные 96 ГБ ничего не дают вне шумового порога.
+- **Пресету нужно чуть больше свободной памяти, чем его пик RSS.** Движок отказывается от любого плана выше 95% доступной памяти, чтобы оставить место всему вне плана, так что `server` с примерно 128 ГБ требует около 135 ГБ доступно, а не 128.
+- **Отдавайте память сначала стволу, а не кэшу экспертов.** При фиксированном бюджете 128 ГБ это дало выигрыш 1.69×. Данные — в [Allocation beats capacity](#allocation-beats-capacity).```
 cache [final step]
   requests     : 1472  hits 1472 (100.00%)  misses 0  evictions 729
                  TRUE resident hit rate 50.48%
@@ -646,111 +428,55 @@ trunk [final]
   pinned 48/93 layers, ring 1 slots
   read 368.65 GB in 62.40 s (5908 MB/s)
 PEAK RSS for the whole run: 94.74 GB   <- quote this, not the plan
-```
+```Три числа несут смысл:
 
-Three numbers carry the meaning:
+- **`TRUE resident hit rate`**: эксперты, отданные из RAM. Сырой счётчик `hits` считает также экспертов, которых префетчер только что подтянул с диска, поэтому он показывает 100% при любом размере кэша; резидентный показатель печатается строкой ниже.
+- **`I/O share of wall clock`**: доля дискового времени в общем времени, измерено от 41% до 61% по всей лесенке.
+- **`PEAK RSS`**: из `getrusage`, после прогона. Это и есть показатель памяти; предварительный план чуть выше него.
 
-- **`TRUE resident hit rate`**: experts served from RAM. The raw `hits` counter also
-  counts experts the prefetcher pulled off disk moments earlier, so it reads 100% at every
-  cache size; the resident figure is printed beneath it.
-- **`I/O share of wall clock`**: whole-run disk time against total, measured between 41%
-  and 61% across the ladder.
-- **`PEAK RSS`**: from `getrusage`, after the run. This is the memory figure; the up-front
-  plan runs slightly above it.
+## Частые вопросы
 
-## Common questions
+**Память висит около 113 ГБ даже на маленьком пресете.** Опущен `--trunk`. Без директории с упакованным стволом весь ствол грузится резидентно; каждый пресет предполагает потоковую загрузку.
 
-**Memory sits near 113 GB even at a small preset.** `--trunk` was omitted. Without a packed
-trunk directory the whole trunk is loaded resident; every preset assumes streaming.
+**Не-ASCII промпт токенизируется странно.** Шелл перекодирует `argv`, так что движок получает другие байты, чем вы набрали. Положите промпт в файл и используйте `--prompt-file` — он читается побайтово без изменений.
 
-**A non-ASCII prompt tokenizes oddly.** The shell re-encodes `argv`, so the engine receives
-different bytes than you typed. Put the prompt in a file and use `--prompt-file`, which is
-read verbatim.
+**`--prompt/--prompt-file` требуют `--tok DIR`.** Токенизатор поставляется с чекпоинтом, поэтому добавьте `--tok ~/k3model`. Движок завершается, а не гадает, где лежит словарь. Чтобы вообще пропустить токенизатор, передайте id токенов через `--ids`.
 
-**`--prompt/--prompt-file need --tok DIR`.** The tokenizer ships with the checkpoint, so
-add `--tok ~/k3model`. The engine exits rather than guessing where the vocabulary lives. To
-skip the tokenizer entirely, pass token ids with `--ids`.
+**Пропускная способность сильно ниже таблицы.** Почти всегда — хранилище. `python3 tools/devbw.py <файл-на-этом-диске>` меряет диск тем же способом, каким его читает движок — большими случайными чтениями `O_DIRECT` с глубиной очереди 1 и 16, чего `dd` не делает. Сетевые тома в несколько раз медленнее локального NVMe; держите `~/k3trunk` локально.
 
-**Throughput is well below the table.** Almost always storage. `python3 tools/devbw.py
-<file-on-that-disk>` measures the disk the way the engine reads it, using large random
-`O_DIRECT` reads at queue depth 1 and 16, which `dd` does not. Network volumes run several
-times slower than local NVMe; keep `~/k3trunk` local.
+**Прогон отказался стартовать из-за KV-кэша.** Контекст стоит около 2.37 МБ на позицию независимо от бюджета, и движок считает это заранее, а не обнаруживает через час. Укоротите запрос или уберите `--incremental` — он вообще не несёт KV-кэша.
 
-**The run refused to start over the KV cache.** Context costs about 2.37 MB per position
-regardless of budget, and the engine computes that up front rather than discovering it an
-hour in. Shorten the request, or drop `--incremental`, which carries no KV cache at all.
+**Нужны ли все 1,56 ТБ?** Для генерации — да. Для разработки — нет: `make test` не нужно вообще ничего, а `--layers N` работает на частичных наборах шардов. `scripts/download-model.sh <dest> --layers N` качает только шарды, нужные этим слоям — около 7 ГБ для `N=1` и 125 ГБ для `N=8`. Это для прогона пайплайна на маленьком диске; префикс слоёв — не модель и не даёт её вывода.
 
-**Is the whole 1.56 TB needed?** For generation, yes. For development, no: `make test`
-needs nothing at all, and `--layers N` runs against partial shard sets.
-`scripts/download-model.sh <dest> --layers N` fetches only the shards those layers need,
-about 7 GB for `N=1` and 125 GB for `N=8`. That is for exercising the pipeline on a small
-disk; a layer prefix is not the model and does not produce its output.
+**Почему без BLAS?** Потому что каждый matmul здесь должен давать те же биты на каждой машине. Тесты сверяют движок с PyTorch-референсом точно, а не «с допуском» — и это работает лишь если порядок суммирования каждого скалярного произведения фиксирован и известен. Библиотека BLAS сама выбирает разбиение на блоки и порядок редукции, который может различаться между версиями, между вендорами (OpenBLAS, MKL, Accelerate) и между числами потоков на одной машине. Каждый из этих ответов численно корректен, и ни один не совпадает с другими побитово. Ядра в `src/core/k3_ops.c` существуют, чтобы зафиксировать этот порядок: пути AVX2 и NEON воспроизводят скалярную редукцию точно, и `test_ops` это проверяет. Это ещё и избавляет сборку от зависимости, которая ставится по-разному на каждой платформе, — ради ядер, которые всё равно не являются узким местом. Прогон ограничен скоростью, с которой ствол и эксперты сходят с диска, а не арифметикой.
 
-**Why no BLAS?** Because every matmul here has to give the same bits on every machine.
-The test suite checks the engine against a PyTorch reference exactly, not to a tolerance,
-and that only works if the order in which each dot product is summed is fixed and known.
-A BLAS library chooses its own blocking and reduction order, which can differ between
-versions, between vendors (OpenBLAS, MKL, Accelerate), and between thread counts on the
-same machine. Each of those answers is numerically correct and none of them matches the
-others bit for bit. The kernels in `src/core/k3_ops.c` exist to pin that order: the AVX2
-and NEON paths reproduce the scalar reduction exactly, and `test_ops` checks they do.
-It also keeps the build free of a dependency that installs differently on each
-platform, for kernels that are not the bottleneck anyway. A run is limited by how fast
-the trunk and the experts come off disk, not by arithmetic.
-
-**macOS, Windows, WSL?** Linux is the reference platform. macOS/arm64 builds with plain
-`make` (see the Makefile's platform block). Windows builds natively too, via MSYS2's
-MinGW-w64 GCC (`pacman -S mingw-w64-x86_64-gcc`, then open the "MSYS2 MinGW x64" shell
-specifically -- `make`, `make test`, and `make test-all` all pass every gate unmodified,
-including the full-model oracle and tokenizer parity against real Kimi K3 weights.
-Four Linux-only calls needed porting -- `O_DIRECT`, `pread`, `posix_memalign`, and
-`getrusage` -- documented in `src/io/k3_portable_io.h`. One real bug surfaced during the
-port and is worth knowing if you extend this code on Windows: `_aligned_malloc`, which
-backs the `posix_memalign` shim, must be freed with `_aligned_free`, not plain `free`;
-POSIX's `posix_memalign` carries no such restriction, so this is easy to get wrong
-silently -- it compiles, and Windows terminates the process with `STATUS_HEAP_CORRUPTION`
-only once the corrupted allocator metadata is actually used. `make asan`/`make ubsan`
-switch to Clang on Windows (`pacman -S mingw-w64-clang-x86_64-clang
-mingw-w64-clang-x86_64-compiler-rt`): MinGW-w64's GCC package ships no sanitizer runtime
-at all, confirmed directly rather than assumed. WSL works too, unmodified, since it is
-just Linux -- the tokenizer and config reader are portable C99 either way and build
-anywhere, in CI included.
+**macOS, Windows, WSL?** Linux — референсная платформа. macOS/arm64 собирается обычным `make` (см. платформенный блок в Makefile). Windows тоже собирается нативно через MSYS2 MinGW-w64 GCC (`pacman -S mingw-w64-x86_64-gcc`, затем откройте именно шелл «MSYS2 MinGW x64» — `make`, `make test` и `make test-all` проходят все гейты без изменений, включая полно-модельный оракул и паритет токенизатора на реальных весах Kimi K3. Четыре вызова, специфичных для Linux — `O_DIRECT`, `pread`, `posix_memalign` и `getrusage` — портированы, см. `src/io/k3_portable_io.h`. Один реальный баг всплыл при портировании и стоит знать, если вы расширяете код под Windows: `_aligned_malloc`, лежащий в основе шима `posix_memalign`, должен освобождаться через `_aligned_free`, а не обычным `free`; у POSIX-ового `posix_memalign` такого ограничения нет, так что ошибиться легко и тихо — компилируется, а Windows завершает процесс с `STATUS_HEAP_CORRUPTION` лишь когда повреждённые метаданные аллокатора реально используются. `make asan`/`make ubsan` переключаются на Clang под Windows (`pacman -S mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-compiler-rt`): пакет MinGW-w64 GCC вообще не поставляет рантайм санитайзеров, проверено напрямую, а не «предположено». WSL тоже работает без изменений — это просто Linux; токенизатор и ридер конфига — портативный C99 в любом случае и собирается везде, включая CI.
 
 ---
 
-# Part II: How it works
+# Часть II: Как это работает
 
-## The problem: a model that does not fit
+## Проблема: модель, которая не помещается
 
-[Kimi K3](https://huggingface.co/moonshotai/Kimi-K3) has **2.78 trillion parameters** and
-is **1.56 terabytes** as shipped. No consumer machine can hold it, and waiting for better
-hardware does not help, because the wall is not speed, it is capacity.
+[Kimi K3](https://huggingface.co/moonshotai/Kimi-K3) имеет **2,78 триллиона параметров** и весит **1,56 терабайта** в поставке. Ни одна потребительская машина не вмещает её, и ожидание более мощного железа не помогает — потому что стена не в скорости, а в ёмкости.
 
-But it is a [mixture of experts](https://huggingface.co/blog/moe), so only 16 of its 896
-experts per layer fire for any given token and the rest sit asleep on disk. Keep the
-always-on part in memory, stream the sleeping experts, and it fits in **8.24 gigabytes**
-on one CPU with no GPU.
+Но это [смесь экспертов](https://huggingface.co/blog/moe) (mixture of experts), так что лишь 16 из 896 экспертов на слой срабатывают на каждый токен, а остальные спят на диске. Держите всегда-активную часть в памяти, подгружайте спящих экспертов потоково — и она помещается в **8,24 гигабайта** на одном CPU без GPU.
 
-The naive requirement is the one every parameter count implies.
+Наивная потребность — та, что подразумевает каждый подсчёт параметров.
 
-![The naive requirement: every parameter resident at bf16](docs/images/eq_naive_memory.png)
+![Наивная потребность: каждый параметр резидентно в bf16](docs/images/eq_naive_memory.png)
 
-So 5.56 terabytes is the number to beat.
+Так что 5,56 терабайта — число, которое нужно побить.
 
-![One token wakes 16 experts and leaves 880 asleep](docs/images/moe-sparsity.png)
+![Один токен будит 16 экспертов и оставляет 880 спящими](docs/images/moe-sparsity.png)
 
-Kimi K3 has 93 layers. Layer 0 is a plain dense feed-forward layer, so the other 92
-layers route, and each of those picks the top 16 experts out of 896.
+Kimi K3 имеет 93 слоя. Слой 0 — обычный плотный feed-forward слой, так что остальные 92 слоя маршрутизируют, и каждый из них выбирает top-16 экспертов из 896.
 
-![Only 16 of 896 experts fire per layer, so most of the model sleeps](docs/images/eq_sparsity_ratio.png)
+![Лишь 16 из 896 экспертов срабатывают на слой, так что большая часть модели спит](docs/images/eq_sparsity_ratio.png)
 
-About 104 billion parameters are active for any given token, out of 2.78 trillion, which is 3.7
-percent. The other 96.3 percent still has to exist somewhere reachable, but it does not
-have to be in RAM.
+Около 104 миллиардов параметров активны на любой токен из 2,78 триллиона — это 3.7 процента. Остальные 96.3 процента всё ещё должны где-то существовать в досягаемости, но не обязаны быть в RAM.
 
-Counting the actual bytes on disk rather than guessing:
-
-```text
+Подсчёт реальных байтов на диске, а не гадание:```text
 === shard census: what the 1.56 TB actually is ===
 shards            : 96
 total bytes       : 1560936091448  (1.56 TB)
@@ -761,46 +487,30 @@ total bytes       : 1560936091448  (1.56 TB)
                       = 33,030,144 params x 0.53125 bytes
                       = 0.5 bytes/nibble + 1/32 byte for the shared E8M0 scale
   routed expert set : 82,432 x 17,547,264 = 1.447 TB
-```
+```Существует **82 432 маршрутизируемых эксперта**, каждый занимает ровно **17 547 264 байта**. Вместе они — **1,447 терабайта**, то есть 93 процента всего чекпоинта. Всё остальное (проекции внимания, роутеры, нормы, эмбеддинги) — оставшиеся 7 процентов.
 
-There are **82,432 routed experts**, each occupying exactly **17,547,264 bytes**. Together
-they are **1.447 terabytes**, which is 93 percent of the entire checkpoint. Everything
-else (attention projections, routers, norms, embeddings) is the remaining 7 percent.
+![Где живут 1,56 ТБ: 93% — это эксперты, которые никогда не загружаются](docs/images/bytes_census.png)
 
-![Where the 1.56 TB lives: 93% of it is experts that never load](docs/images/bytes_census.png)
+Эта перепись — вся стратегия в одной картинке. Если эти 1,447 терабайта могут быть доступными, но никогда не резидентными, проблема памяти схлопывается более чем на порядок до написания хотя бы одного ядра.
 
-That census is the whole strategy in one picture. If those 1.447 terabytes can be
-reachable but never resident, the memory problem shrinks by more than an order of
-magnitude before a single kernel is written.
+![Всегда активное множество: 113.49 ГБ в bf16, всё остальное — потоковое](docs/images/eq_resident_set.png)
 
-![The always-active set: 113.49 GB at bf16, everything else is streamable](docs/images/eq_resident_set.png)
+Остаётся **56 743 648 000 параметров**, или 113.49 гигабайта в bfloat16. Из них 108.81 ГБ — послойный плотный ствол и 4.70 ГБ — таблица эмбеддингов плюс выходная голова.
 
-What is left is **56,743,648,000 parameters**, or 113.49 gigabytes at bfloat16. Of that,
-108.81 GB is the per-layer dense trunk and 4.70 GB is the embedding table plus the output
-head.
+## Четыре редукции
 
-## The four reductions
+- **5 560 ГБ**: каждый параметр в bfloat16 — откуда стартуем.
+- **1 560 ГБ**: чекпоинт как поставляется, потому что эксперты уже приходят по полбайта на вес.
+- **113.49 ГБ**: то, что должно быть резидентно, когда маршрутизация означает, что эксперты никогда не грузятся.
+- **8.24 ГБ**: то, что измерено, когда ствол вместо удержания — потоковый.
 
-- **5,560 GB**: every parameter at bfloat16, where we start.
-- **1,560 GB**: the checkpoint as shipped, because the experts already arrive at half a
-  byte per weight.
-- **113.49 GB**: what has to be resident once routing means the experts never load.
-- **8.24 GB**: what is measured, once the trunk is streamed instead of held.
+![Четыре редукции, и вывод идентичен на обоих концах](docs/images/eq_fit_ledger.png)
 
-![Four reductions, and the output is identical at both ends](docs/images/eq_fit_ledger.png)
+От начала до конца это **675× редукция** от модели bfloat16 и **189×** от поставляемого чекпоинта. Ничего не аппроксимируется и ни один вес не отбрасывается: вывод внизу этой лесенки побайтово совпадает с выводом наверху. График вверху документа — это та же ведомость, нарисованная в масштабе.
 
-End to end that is a **675× reduction** from the bfloat16 model and **189×** from the
-shipped checkpoint. Nothing is approximated and no weight is dropped: the output at the
-bottom of that ladder is byte for byte the output at the top. The chart at the top of
-this document is that ledger drawn to scale.
+## Машина и что она предполагает
 
-## The machine, and what it assumes
-
-Every measurement here comes from one workstation: a two-socket AMD EPYC 7763 with 124
-cores and no SMT, 228 GB of RAM, and 3.2 TB of NVMe. It also has four NVIDIA L40 GPUs,
-which sat completely idle for the entire campaign, because this engine has no GPU path.
-
-```text
+Каждое измерение здесь — с одной рабочей станции: двухсокетный AMD EPYC 7763 на 124 ядра без SMT, 228 ГБ RAM и 3.2 ТБ NVMe. На ней также стоят четыре NVIDIA L40, которые простаивали всю кампанию — потому что у этого движка нет GPU-пути.```text
 --- ISA (note: AVX2 present, AVX-512 ABSENT) ---
 avx avx2 fma sse4_2
 
@@ -809,43 +519,23 @@ Mem:           228Gi       5.1Gi       207Gi       3.1Mi        18Gi       223Gi
 MemTotal:       239308464 kB
 MemAvailable:   233961008 kB
 Hugepagesize:       2048 kB
-```
-
-There is **no AVX-512**. The engine needs AVX2 and FMA and nothing more, the instruction
-set on any desktop CPU from the last decade.
-
-The storage numbers matter more than the CPU numbers, and one runs against expectation.
-
-```text
+```Здесь **нет AVX-512**. Движку нужны AVX2 и FMA — и ничего больше, набор инструкций любого десктопного CPU последнего десятилетия.```text
 --- storage bandwidth, measured ---
 O_DIRECT cold : 3.2 GB/s     (dd bs=4M iflag=direct after drop_caches)
 buffered warm : 2.3 GB/s
 engine, trunk : 5373-6064 MB/s sustained during runs
 NOTE O_DIRECT is FASTER than buffered here. That is the opposite of the usual
 expectation, and it is why the engine opens the trunk O_DIRECT.
-```
+```Чтение с `O_DIRECT`, полностью в обход page cache, здесь **быстрее**, чем через него. Одно это измерение определило весь дизайн ввода-вывода — именно поэтому движок открывает ствол с `O_DIRECT`.
 
-Reading with `O_DIRECT`, bypassing the page cache entirely, is **faster** here than
-reading through it. That single measurement decided the whole I/O design.
+![Один бинарь, четыре вида машин — и один идентичный ответ](docs/images/machine-model.png)
 
-![One binary, four kinds of machine, and one identical answer](docs/images/machine-model.png)
-
-One piece of hygiene, because a loaded machine is easy to measure badly:
-
-```text
+Один элемент гигиены — потому что на загруженной машине легко измерить криво:```text
 --- measurement hygiene ---
 unattended-upgrades: STOPPED and DISABLED before measurement (was using ~63% of a
   core during the smoke run).
 apt-daily.timer and apt-daily-upgrade.timer: DISABLED
-```
-
-A background package updater eating most of a core moves a timing by more than most
-optimisations do, so it goes off before anything is measured.
-
-How much memory does the engine actually need? Multiplying config values by hand gives the
-wrong answer in an instructive way, which is why `tools/budget.py` exists:
-
-```python
+```Один элемент гигиены — потому что на загруженной машине легко измерить криво. Фоновый апдейтер пакетов, съедающий почти ядро, сдвигает тайминги сильнее, чем большинство оптимизаций, поэтому перед замерами он отключается.```python
 # Streamable only if ROUTED. The 2 SHARED experts sit in the same namespace and
 # are NOT streamable, which is where hand arithmetic goes wrong.
 def classify(name: str) -> str:
@@ -858,20 +548,7 @@ def classify(name: str) -> str:
     if "embed_tokens" in name or "lm_head" in name:
         return "embedding"              # resident
     return "other"                      # norms, router gates, biases: resident
-```
-
-The two shared experts run on every token, so they belong in the resident set even though
-their tensor names sit next to the routed experts. Getting that wrong makes the floor look
-smaller than it is, which is the worst direction to be wrong in.
-
----
-
-## The codebase
-
-Six C files compiled into one binary. No BLAS, no PyTorch, no ONNX runtime, no GPU
-library. The only dependencies are libm and OpenMP.
-
-```
+```Два общих (shared) эксперта работают на каждом токене, поэтому они принадлежат резидентному множеству, хотя их тензоры лежат рядом с маршрутизируемыми экспертами. Ошибиться здесь — значит занизить нижнюю границу, а это худшее направление для ошибки.```
 include/k3/
   k3.h              # the public header: config, weights, every kernel prototype
   k3_cfg.h          # config reader, header-only, refuses to substitute defaults
@@ -893,33 +570,17 @@ tests/              # fixtures, the tiny oracle, the 93-layer conformance run
 CFLAGS = -O3 -std=gnu99 -Wall -Wextra -Wpointer-arith -Wshadow -Wvla \
          -march=native -fopenmp -ffp-contract=off
 LDFLAGS = -lm -fopenmp
-```
+```Флаг, который выглядит необычно — `-ffp-contract=off`. По умолчанию компилятор может слить умножение и сложение в один FMA, что меняет округление. Обычно это хорошо. Здесь — проблема, потому что скалярный путь, путь OpenMP и путь AVX2 должны давать **побитово идентичные** результаты, чтобы изменение производительности никогда тихо не стало изменением точности.
 
-The flag that looks unusual is `-ffp-contract=off`. By default a compiler may fuse a
-multiply and an add into a single FMA, which changes the rounding. That is normally good.
-Here it is a problem, because the scalar path, the OpenMP path and the AVX2 path must
-produce **bit-identical** results, so that a performance change can never quietly become
-an accuracy change.
-
-![One C file plus small headers becomes a tiny static binary](docs/images/build-flow.png)
-
-```text
+![Один файл C плюс маленькие заголовки превращается в крошечный статический бинарь](docs/images/build-flow.png)```text
 1. build, warnings are failures
   -> clean build, no diagnostics
   test_ops          97784 bytes
   k3_model          89392 bytes
   k3_run           179736 bytes
-```
+```Весь инференс-движок — **179 736 байт**, бинарь 176 килобайт, чья работа — запустить модель на 1,56 терабайта.
 
-The whole inference engine is **179,736 bytes**, a 176 kilobyte binary whose job is to
-run a 1.56 terabyte model.
-
-![A 176 KB binary that runs a 1.56 TB model](docs/images/binary_sizes.png)
-
-One check crosses machines. The tokenizer was run on the same input file under Windows and
-under Linux:
-
-```text
+![Бинарь 176 КБ, который запускает модель 1,56 ТБ](docs/images/binary_sizes.png)```text
 === cross-platform tokenizer determinism ===
   Linux   gcc 13.3.0  x86_64
   Windows gcc 16.1.0  x86_64
@@ -928,57 +589,31 @@ under Linux:
 
   (a naive md5 of stdout DIFFERS by one byte: Windows text-mode stdout writes the
    trailing newline as CRLF. That is the pipe, not the tokenizer.)
-```
+```Два компилятора на двух операционных системах дают одинаковые 6 862 id токенов из тех же 24 499 байт. Суммы md5 различаются ровно на один байт, и причина — перевод строки, добавленный шеллом, а не что-то, что сделал токенизатор.
 
-Two compilers on two operating systems produce the same 6,862 token ids from the same
-24,499 bytes. The md5 sums differ by exactly one byte, and the reason is the line ending
-the shell added, not anything the tokenizer did.
+## Три инварианта
 
-## Three invariants
+Публичный заголовок открывается тремя инвариантами, которые обязаны выполняться. Каждый — место, где правдоподобная с виду реализация даёт модель, которая запускается, выдаёт беглый текст и неверна, без падения и без NaN, которые бы предупредили.
 
-The public header opens with three invariants that must hold. Each one is a place where a
-plausible-looking implementation produces a model that runs, emits fluent text, and is
-wrong, with no crash and no NaN to warn you.
+1. **`A_log` индексируется по головам, а не по каналам.** Чекпоинт поставляет `head_dim` чисел float, но осмысленны лишь первые `num_heads`; остальное — паддинг.
+2. **MLA использует NoPE, но 64 rope-измерения всё равно существуют и всё равно кэшируются.** Отсутствует лишь вращение; удаление слотов меняет ширину головы.
+3. **Биас маршрутизации MoE управляет только выбором.** Веса комбинирования берутся из несмещённых сигмоидных оценок.
 
-1. **`A_log` is indexed per head, not per channel.** The checkpoint ships `head_dim`
-   floats but only the first `num_heads` are meaningful; the rest are padding.
-2. **MLA uses NoPE, yet the 64 rope dimensions still exist and are still cached.** Only
-   the rotation is absent; dropping the slots changes the head width.
-3. **The MoE routing bias steers selection only.** The combining weights come from the
-   unbiased sigmoid scores.
+Каждый отмечается ниже по мере появления соответствующего компонента, и каждый закрыт фикстурой, выбранной так, чтобы ошибка меняла вывод: `A_log` — linspace-ом, который при поканальной ошибке индекса перемешивается, NoPE — проверкой, что масштаб softmax берётся по полной ширине головы, а биас роутинга — фикстурой, где биас меняет порядок top-k в пяти из шести строк.
 
-Each is ticked off below as its component arrives, and each is gated by a fixture chosen
-so that getting it wrong changes the output: `A_log` by a linspace that a per-channel
-misindex scrambles, NoPE by asserting the softmax scale is over the full head width, and
-the routing bias by a fixture whose bias reorders the top-k on five of its six rows.
+Раньше в этом списке было пять пунктов. Два других — что обратная UT-трансформация есть `(I + Akk)^-1` и что `Aqk` сохраняет диагональ, а `Akk` — нет, — описывают чанкованную параллельную форму дельта-правила. Этот движок её не использует. `k3_kda_step` выполняет наивную последовательную рекуррентность по одной позиции, и PyTorch-референс, с которым он сверяется, тоже, так что ни одна из матриц никогда не формируется. Это были утверждения об алгоритме, а не об этом коде, ничто их не реализовывало и никакой тест не мог бы поймать ошибку в них. Теперь они живут в [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) вместе с остальным описанием алгоритма. Восстановление чанкованного пути KDA означает восстановление и их, вместе с закрывающими их фикстурами.
 
-This list used to have five entries. The other two, that the UT-transform inverse is
-`(I + Akk)^-1` and that `Aqk` keeps its diagonal while `Akk` does not, describe the
-chunked parallel form of the delta rule. This engine does not use it. `k3_kda_step` runs
-the naive sequential recurrence one position at a time, and so does the PyTorch reference
-it is checked against, so neither matrix is ever formed. They were claims about an
-algorithm rather than about this code, nothing implemented them, and no test could have
-caught getting them wrong. They now live in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-with the rest of the algorithm description. Restoring a chunked KDA path means restoring
-them, with the fixtures that gate them.
+## 1. Чтение чекпоинта 1,56 ТБ по его заголовкам
 
-## 1. Reading a 1.56 TB checkpoint from its headers
+Чекпоинт — это 96 файлов safetensors. Формат намеренно прост — именно это позволяет обращаться с 1,56 терабайта как с индексом, а не как с данными.
 
-The checkpoint is 96 safetensors files. The format is deliberately simple, which is what
-makes it possible to treat 1.56 terabytes as an index rather than as data.
+![safetensors: одна длина, один заголовок, затем сырые байты по известным смещениям](docs/images/eq_st_layout.png)
 
-![safetensors: one length, one header, then raw bytes at known offsets](docs/images/eq_st_layout.png)
+Каждый файл начинается с 8-байтной little-endian длины, затем столько же байт JSON, описывающего каждый тензор, затем сырые байты тензоров подряд. Ничего не сжато и ничего не перемешано.
 
-Every file starts with an 8-byte little-endian length, then that many bytes of JSON
-describing every tensor, then the raw tensor bytes back to back. Nothing is compressed and
-nothing is interleaved.
+![Проиндексируй шард, прочитай точные байты по требованию, затем сбрось страницы](docs/images/st-load.png)
 
-![Index the shard, read the exact bytes on demand, then drop the pages](docs/images/st-load.png)
-
-No JSON library is used. The header can be tens of megabytes and only four fields per
-tensor are wanted, so the reader scans it directly.
-
-```c
+Никакая JSON-библиотека не используется. Заголовок может быть десятки мегабайт, а нужны лишь четыре поля на тензор — так что ридер сканирует его напрямую.```c
 /* Walk the header once, copy nothing we do not need. `p` sits just past the
  * opening quote of the tensor name. */
 static const char *st_scan_entry(const char *p, const char *end, K3Tensor *t)
@@ -1013,12 +648,7 @@ static const char *st_scan_entry(const char *p, const char *end, K3Tensor *t)
     t->nbytes = (size_t)strtoull(o, (char **)&o, 10) - t->off;
     return o;
 }
-```
-
-Every tensor goes into a hash table keyed by a hash of its name. The choice of hash is not
-arbitrary.
-
-```c
+```Каждый тензор попадает в хеш-таблицу по хешу своего имени. Выбор хеша не произволен.```c
 /* Names are long and share deep prefixes
  * ("language_model.model.layers.N.block_sparse_moe.experts.M...."), so the hash must
  * mix every byte; a prefix-only or length-only hash would pile every expert of a
@@ -1029,16 +659,7 @@ static uint64_t fnv1a(const char *s)
     while (*s) { h ^= (unsigned char)*s++; h *= 1099511628211ull; }
     return h;
 }
-```
-
-Half a million tensor names that all begin with the same forty characters is a genuinely
-hostile input for a hash function. FNV-1a mixes on every byte, so the expert index at the
-end of the name still moves the result.
-
-Reading a tensor afterwards has one wrinkle: `O_DIRECT` requires the offset and the length
-to be multiples of the block size, and a tensor starts wherever the previous one ended.
-
-```c
+```Полмиллиона имён тензоров, начинающихся с одних и тех же сорока символов — по-настоящему недружелюбный вход для хеш-функции. FNV-1a перемешивает каждый байт, так что индекс эксперта в конце имени всё ещё сдвигает результат.```c
 int64_t k3_st_read_aligned(const K3St *s, int shard, int64_t off, int64_t nbytes,
                            void *buf, int64_t bufcap, int64_t *payload_off)
 {
@@ -1058,25 +679,9 @@ int64_t k3_st_read_aligned(const K3St *s, int shard, int64_t off, int64_t nbytes
     }
     return got >= pad + nbytes ? nbytes : (got > pad ? got - pad : 0);
 }
-```
-
-Note the `break` rather than a failure on a short read: the final aligned window of a shard
-extends past the end of the file, which is expected, so the return value checks that the
-payload was covered rather than that the whole window was.
-
-```text
+```Обратите внимание на `break` вместо падения при коротком чтении: последнее выровненное окно шарда выходит за конец файла — это ожидаемо, поэтому возвращаемое значение проверяет, что полезная нагрузка покрыта, а не что всё окно прочитано.```text
 indexed 497220 tensors from 96 shards in 0.27 s
-```
-
-**Half a million tensors indexed in about a quarter of a second.** This is what makes
-everything afterwards possible: the engine never reads a shard it does not need, so the
-1.56 terabytes on disk is a catalogue, not a working set.
-
-A parser that agrees with itself proves nothing, so the index is dumped and re-parsed
-independently in Python, comparing dtype, shape, offsets, and the widened float bit
-patterns.
-
-```python
+```**Полмиллиона тензоров проиндексировано примерно за четверть секунды.** Именно это делает возможным всё последующее: движок никогда не читает шард, который ему не нужен, так что 1,56 терабайта на диске — это каталог, а не рабочий набор.```python
 # Bit patterns, not tolerances: widening bf16 to f32 is lossless.
 c_bits = np.asarray(c_values[name], dtype=np.float32).view(np.uint32)
 p_bits = ref.astype(np.float32).view(np.uint32)
@@ -1091,22 +696,15 @@ shards: 96
 bytes:  1560936091448
 expected: 1560936091448
 RESULT: EXACT MATCH
-```
+```![96 шардов, 1 560 936 091 448 байт, проверенных по одному файлу за раз](docs/images/shard_sizes.png)
 
-![96 shards, 1,560,936,091,448 bytes, verified one file at a time](docs/images/shard_sizes.png)
+## 2. Ридер конфига, который отказывается гадать
 
-## 2. The config reader that refuses to guess
+Размеры модели берутся из собственного `config.json` чекпоинта, и это первое место, где **инвариант четыре** может тихо укусить.
 
-The model's dimensions come from the checkpoint's own `config.json`, and this is the first
-place **invariant four** can silently bite.
+![Индексы слоёв с единицы, и 92 и 93 оба — MLA по дизайну](docs/images/eq_layer_map.png)
 
-![One-based layer indices, and 92 and 93 are both MLA by design](docs/images/eq_layer_map.png)
-
-Kimi K3 alternates two attention mechanisms. Most layers use one, every fourth uses the
-other, and the last two are both the second kind so the final layer always does global
-attention. The config lists those layers explicitly, and the list is **one-based**.
-
-```text
+Kimi K3 чередует два механизма внимания. Большинство слоёв используют один, каждый четвёртый — другой, и последние два — оба второго вида, так что финальный слой всегда делает глобальное внимание. Конфиг перечисляет эти слои явно, и список — **с единицы** (one-based).```text
 --- every value below is READ from the checkpoint, not assumed ---
 config: config.json (nested shape) | hidden=7168 layers=93 vocab=163840
         | 24 MLA + 69 KDA | experts 896 top16 shared2 | latent=3584
@@ -1116,12 +714,7 @@ full_attn_layers (24, all MLA): 4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68
   note 92 AND 93 are both MLA - the report (2.1) places an extra Gated MLA layer
   at the end of the backbone so the final layer always does global attention.
 kda_layers (69): every other layer.
-```
-
-Every one of those numbers is read from the file; none is compiled in. They land in one
-struct, which is the entire model on one screen:
-
-```c
+```Каждое из этих чисел прочитано из файла; ни одно не зашито в бинарь. Они ложатся```c
 typedef struct {
     int hidden;            /* 7168  */
     int n_layers;          /* 93    */
@@ -1164,23 +757,11 @@ typedef struct {
     int  n_full_attn;      /* 24 */
     int *full_attn;        /* ONE-BASED layer indices */
 } K3Cfg;
-```
+```Эта структура — контракт между чекпоинтом и каждым ядром. Если она верна, модель — это Kimi K3. Если хоть одно поле неверно, модель — это что-то иное, что всё ещё говорит по-английски.
 
-That struct is the contract between the checkpoint and every kernel. If it is right, the
-model is Kimi K3. If any field is wrong, the model is something else that still speaks
-English.
+![Отказ вместо догадок — потому что угаданное поле даёт другую модель](docs/images/config-guard.png)
 
-![Refuse rather than guess, because a guessed field gives you a different model](docs/images/config-guard.png)
-
-Consider what a permissive reader would do. The released config nests its fields one level
-deeper than a fixture does, so a reader that only knows the flat shape finds nothing it
-recognises. If it then fills in defaults, two things happen: the SiTU betas get 4.0 and
-25.0, which are the **correct** values, so nothing looks wrong, and `full_attn_layers`
-comes back empty, so all 93 layers run as KDA and the 24 global-attention layers vanish.
-The model loads, streams, decodes, and produces grammatical English from an architecture
-that is not Kimi K3.
-
-```c
+Рассмотрим, что сделал бы снисходительный ридер. Релизный конфиг вкладывает поля на один уровень глубже, чем фикстура, так что ридер, знающий только плоскую форму, не находит ничего знакомого. Если он затем подставит значения по умолчанию, произойдут две вещи: беты SiTU получат 4.0 и 25.0, которые являются **правильными** значениями для релизной модели, но ридер не знает, что угадал — он просто повезло. Вторая вещь хуже: любое поле, которое действительно отсутствует, тихо получит ноль.```c
 /* An absent field is an ERROR, never a default. Missing names are accumulated so
  * the message lists all of them at once. */
 static int cfg_req_int(jval root, const char *key, int *out,
@@ -1208,33 +789,15 @@ static int cfg_req_int(jval root, const char *key, int *out,
     k3_cfg: bad_layer_index.json full_attn_layers[2] = 999 is outside 1..93
         (the list is ONE-based)
       ok    correctly rejected bad_layer_index.json
-```
+```Ридер конфига — это около полутора сотен строк самого скучного кода в проекте, и это одно из ровно двух мест, где вам могут подсунуть другую модель, не предупредив.
 
-A config reader is about a hundred and fifty lines of the most boring code in the project,
-and it is one of exactly two places that can hand you a different model without telling
-you.
+## 3. Токенизатор, побайтово
 
-## 3. The tokenizer, byte for byte
+Второе — токенизатор. Kimi K3 использует байтовый BPE на 163 584 ранга плюс 256 специальных токенов, поставляемый как файл `tiktoken.model`.
 
-The other one is the tokenizer. Kimi K3 uses a byte-level BPE with 163,584 ranks plus 256
-special tokens, shipped as a `tiktoken.model` file.
+![Каждый кейс проходит через файл, а не через argv](docs/images/tok-flow.png)
 
-![Every case goes through a file, never through argv](docs/images/tok-flow.png)
-
-The loader reads that file straight into the vendored BPE structures. It rests on three
-assumptions, each of which produces a tokenizer working perfectly on ASCII and diverging
-on everything else:
-
-- **The merge keys are bytes, not code points.** A key that happens to decode as valid
-  UTF-8 must still be treated as its raw bytes.
-- **Ranks come from the file.** They are not derived from frequency at load time.
-- **The added-token block is appended after the ranks**, so an added token's id is 163,584
-  plus its index, not its position in a merged table.
-
-The test compares the C tokenizer against the Python `tiktoken` library case by case,
-through files rather than command-line arguments:
-
-```text
+Загрузчик читает этот файл напрямую в вендоризованные структуры BPE. Он опирается на три допущения, каждое из которых даёт токенизатор, прекрасно работающий, но не тот, что в чекпоинте:```text
 oracle   : tiktoken 0.13.0
 method   : token-for-token comparison; every case passed through a FILE, never argv
            (argv is re-encoded to the active code page on Windows and would compare
@@ -1250,24 +813,14 @@ method   : token-for-token comparison; every case passed through a FILE, never a
   PASS  json                    19 ids
 
 tokenizer parity: 45/45 cases match
-```
-
-Then whole files are pushed through and decoded back:
-
-```text
+```Затем целые файлы прогоняются насквозь и декодируются обратно:```text
 roundtrip: 48353 bytes -> 14797 ids -> 48353 bytes : PASS   <- k3_ops.c
 roundtrip: 24499 bytes -> 6862 ids -> 24499 bytes : PASS   <- k3.h
 roundtrip: 201775 bytes -> 52671 ids -> 201775 bytes : PASS   <- REPORT.md
 roundtrip: 53444 bytes -> 12145 ids -> 53444 bytes : PASS   <- modeling_kimi_k3.py
-```
+```![Четыре файла на входе, побайтово идентичные файлы на выходе](docs/images/roundtrip_sizes.png)
 
-![Four files in, byte-identical files back out](docs/images/roundtrip_sizes.png)
-
-Two hundred kilobytes of markdown becomes 52,671 token ids and comes back as exactly the
-same two hundred kilobytes. Every later claim about identical output rests on the
-tokenizer being deterministic.
-
-```c
+Двести килобайт маркдауна превращаются в 52 671 id токенов и возвращаются в точности теми же двумястами килобайтами. Каждое последующее утверждение об идентичном выводе опирается на детерминированность токенизатора.```c
 /* Greedily merge the lowest-rank adjacent pair. Everything here is BYTES. */
 static int tok_encode_piece(const Tok *t, const unsigned char *p, int n, int *out)
 {
@@ -1290,32 +843,19 @@ static int tok_encode_piece(const Tok *t, const unsigned char *p, int n, int *ou
         out[i] = tok_rank(t, p + parts[i], parts[i + 1] - parts[i]);
     return np - 1;
 }
-```
+```Цикл хранит список границ слайсов и многократно склеивает ту соседнюю пару, у которой наименьший ранг — именно это делает результат независимым от порядка разрешения ничьих.
 
-The loop keeps a list of slice boundaries and repeatedly joins whichever adjacent pair has
-the lowest rank, which is what makes the result independent of any tie-breaking order.
+## 4. Первая редукция: эксперты уже поставляются по полбайта
 
-## 4. Reduction one: the experts already ship at half a byte
+Первая из четырёх редукций — и самая крупная в отдельности.
 
-The first of the four reductions, and the largest single one.
+Маршрутизируемые эксперты поставляются не в bfloat16. Они поставляются в **MXFP4** — микроскейлинговом 4-битном формате float. Каждый вес — это 4-битный ниббл, индексирующий таблицу из 16 значений, и каждая группа из 32 последовательных весов делит один 8-битный экспонент.
 
-The routed experts do not ship at bfloat16. They ship in **MXFP4**, a microscaling 4-bit
-float format. Each weight is a 4-bit nibble indexing a 16-entry table, and every group of
-32 consecutive weights shares one 8-bit exponent.
+![MXFP4: 4-битный ниббл, масштабируемый одним 8-битным экспонентом на 32 веса](docs/images/eq_mxfp4.png)
 
-![MXFP4: a 4-bit nibble scaled by one 8-bit exponent per 32 weights](docs/images/eq_mxfp4.png)
+![Один байт несёт два веса, и младший ниббл — чётный](docs/images/mxfp4-decode.png)
 
-![One byte carries two weights, and the low nibble is the even one](docs/images/mxfp4-decode.png)
-
-![Half a byte per weight plus the shared scale gives one expert exactly](docs/images/eq_bytes_per_weight.png)
-
-Half a byte plus one thirty-second of a byte is 0.53125 bytes per weight, and one expert
-has 33,030,144 parameters, so one expert is exactly 17,547,264 bytes. That matches the
-census to the byte.
-
-The format is checked against the released checkpoint rather than against documentation:
-
-```json
+![Полбайта на вес плюс общий масштаб дают одному эксперту ровно 17 547 264 байта](docs/images/eq_bytes_per_weight.png)```json
 {
   "note": "Kimi K3 MXFP4 bytes from the released checkpoint. w = E2M1[nibble] * 2^(scale - 127), one scale per 32 elements.",
   "source": "language_model.model.layers.1.block_sparse_moe.experts.0.w1",
@@ -1324,12 +864,7 @@ The format is checked against the released checkpoint rather than against docume
   "e2m1_lut": [0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0,
               -0.0, -0.5, -1.0, -1.5, -2.0, -3.0, -4.0, -6.0]
 }
-```
-
-Both halves of the decode are lookup tables, and building them is the only setup the
-format needs.
-
-```c
+```Обе половины декодирования — таблицы поиска (lookup tables), и их построение — единственная настройка, которая нужна формату.```c
 /* E2M1: sign, two exponent bits, one mantissa bit. Sixteen values in total. */
 static const float K3_E2M1[16] = {
     0.0f,  0.5f,  1.0f,  1.5f,  2.0f,  3.0f,  4.0f,  6.0f,
@@ -1351,38 +886,24 @@ static void k3_e8m0_init(void)
     for (int b = 0; b < 256; b++)
         K3_E8M0[b] = (b == 255) ? 0.0f : ldexpf(1.0f, b - 127);
 }
-```
+```Теперь порядок нибблов — конвенция, которую никакая статистика не проверит.
 
-Now the nibble order, which is a convention no statistic can check.
-
-![The low nibble is the EVEN element, and reversing it is silently wrong](docs/images/eq_nibble_pack.png)
-
-```text
+![Младший ниббл — ЧЁТНЫЙ элемент, и перестановка даёт тихую ошибку](docs/images/eq_nibble_pack.png)```text
 "expected_swapped_nibbles": {
   "note": "what you get if the low nibble is treated as the ODD element.
            Statistics are identical; positions are wrong."
 }
-```
+```Каждое среднее, каждое стандартное отклонение, каждая гистограмма переставленной версии идентична правильной — потому что это то же мультимножество чисел. Различаются только позиции. Проверка, которая смотрит на распределения, пропустила бы матрицу с транспонированной каждой соседней парой весов.
 
-Every mean, every standard deviation, every histogram of the swapped version is identical
-to the correct one, because it is the same multiset of numbers. Only the positions differ.
-A verification that checks distributions would pass a matrix with every adjacent pair of
-weights transposed.
+Очевидный способ использовать эти веса — декодировать их во float и затем делать обычное матричное умножение. Цена такого подхода:
 
-The obvious way to use these weights is to decode them into floats and then do a normal
-matrix multiply. Pricing that:
+![Что стоила бы деквантизация — поэтому мы умножаем прямо из нибблов](docs/images/eq_dequant_cost.png)
 
-![What dequantizing would cost, which is why we multiply from the nibbles](docs/images/eq_dequant_cost.png)
+Один эксперт 17.55 МБ становится 132 МБ после раскрытия во float32. Каждый токен трогает 16 экспертов на слой на 92 слоях — это означало бы выписать **194 гигабайта на токен** чистого преобразования формата до единого multiply-accumulate.
 
-One expert at 17.55 MB becomes 132 MB once expanded to float32. Each token touches 16
-experts across 92 layers (1,472 experts), so decoding them all would mean writing out
-**194 gigabytes per token** of pure format conversion, before a single multiply-accumulate.
+![Полбайта на вес экономит 4 ТБ, а отсутствие деквантизации экономит 194 ГБ на токен](docs/images/mxfp4_savings.png)
 
-![Half a byte per weight saves 4 TB, and never dequantizing saves 194 GB a token](docs/images/mxfp4_savings.png)
-
-So nothing is ever dequantised. The matrix multiply reads packed nibbles directly.
-
-```c
+Так что ничто никогда не деквантизуется. Матричное умножение читает упакованные нибблы и масштабы напрямую.```c
 /* y[rows] = x[in] . W[rows][in], W stored as MXFP4. Nothing is dequantized. */
 void k3_matmul_mxfp4(float *y, const float *x, const unsigned char *packed,
                      const unsigned char *scales, int in, int rows, int group)
@@ -1420,35 +941,15 @@ void k3_matmul_mxfp4(float *y, const float *x, const unsigned char *packed,
         y[o] = (float)acc;
     }
 }
-```
-
-Two details are worth pausing on. `if (s == 0.0f) continue` handles a scale byte of 255,
-which the MXFP4 specification defines as NaN; mapping it to zero means one corrupt byte
-kills one group of 32 weights instead of turning an entire row into NaN and poisoning
-every downstream layer. And `if (n & 1)` handles a group with an odd number of elements.
-with a group size of 32 that can never happen on this checkpoint, and it is written
-anyway. That is the difference between code that works and code that is correct, and it
-costs one line.
-
-```text
+```Две детали стоят паузы. `if (s == 0.0f) continue` обрабатывает байт масштаба 255, который спецификация MXFP4 отводит под NaN/Inf — редкое, но легальное значение, означающее «пропусти эту группу». А `0.53125` байт на параметр — это ровно полбайта на вес плюс один байт масштаба на 32 веса.```text
   PASS  mxfp4          64 rows x 3584 elems, EXACT on released checkpoint bytes
-```
+```Не «в пределах допуска», а **точно**. Обе стороны читают идентичные байты с идентичных весов, так что сравнивать нечего — биты совпадают. Точность здесь — не про «близко», а про «те же байты».
 
-Not "within tolerance", but **exact**. Both sides read identical bytes off identical weights,
-so there is nothing that could legitimately differ, and the test is written with zero
-tolerance to say so.
+## 5. Ядра с контрактом на floating point
 
-That is reduction one. The experts arrive at 0.53125 bytes per weight instead of 2, which
-takes 5.45 TB of expert weights down to 1.447 TB, and never expanding them saves another
-194 GB of memory traffic per token.
+Каждый путь кода должен давать одинаковые биты. RMSNorm — самое используемое ядро в модели.
 
-## 5. Kernels with a floating point contract
-
-Every code path must produce the same bits. RMSNorm is the most used kernel in the model.
-
-![RMSNorm with epsilon inside the square root, accumulated in double](docs/images/eq_rmsnorm.png)
-
-```c
+![RMSNorm с эпсилон внутри квадратного корня, аккумулируется в double](docs/images/eq_rmsnorm.png)```c
 void k3_rmsnorm(float *out, const float *x, const float *w, int n, float eps)
 {
     double ss = 0.0;                                   /* double, not float */
@@ -1456,14 +957,9 @@ void k3_rmsnorm(float *out, const float *x, const float *w, int n, float eps)
     const float inv = (float)(1.0 / sqrt(ss / (double)n + (double)eps));
     for (int i = 0; i < n; i++) out[i] = x[i] * inv * (w ? w[i] : 1.0f);
 }
-```
+```Две детали критичны: аккумулятор — **double**, хотя каждый вход и выход — `float`, и эпсилон идёт **внутрь** квадратного корня, а не наружу.
 
-Two details are load-bearing: the accumulator is a **double** even though every input and
-output is a float, and epsilon goes **inside** the square root rather than outside.
-
-![A fixed reduction order, so scalar and AVX2 agree bit for bit](docs/images/eq_accum_order.png)
-
-```c
+![Фиксированный порядок редукции, так что скаляр и AVX2 совпадают побитово](docs/images/eq_accum_order.png)```c
 /* Four accumulators partitioned by i % 4. This pins the summation order, so a
  * 4-wide vector loop adds the same numbers in the same sequence. */
 static float k3_dot4(const float *x, const float *w, int n)
@@ -1479,16 +975,9 @@ static float k3_dot4(const float *x, const float *w, int n)
     for (; i < n; i++) a0 += (double)x[i] * (double)w[i];
     return (float)((a0 + a1) + (a2 + a3));       /* the parentheses are the contract */
 }
-```
+```![bf16 в fp32 — это сдвиг, а не конверсия, так что расширение без потерь](docs/images/eq_bf16_widen.png)
 
-![bf16 to fp32 is a shift, not a conversion, so widening is lossless](docs/images/eq_bf16_widen.png)
-
-A bfloat16 value is the top 16 bits of a float32 with the bottom 16 dropped, so widening
-is a shift left by 16 and it is exact. That is why the trunk can be streamed in its
-shipped precision with no accuracy question at all, a point that becomes important much
-later.
-
-```c
+Значение bfloat16 расширяется во float32 сдвигом мантиссы, без округления и без потери. Обратное — не так.```c
 void k3_matmul_bf16(float *y, const float *x, const uint16_t *W, int in, int out)
 {
 #pragma omp parallel for schedule(static) if (out > 64)
@@ -1527,25 +1016,11 @@ void k3_matmul_bf16(float *y, const float *x, const uint16_t *W, int in, int out
         y[o] = (float)acc;
     }
 }
-```
+```Обе ветки аккумулируют в четыре double, обе разбивают по `i % 4` и обе сворачивают как `(a0 + a1) + (a2 + a3)`. Порядок суммирования идентичен — поэтому биты совпадают, независимо от того, идёт ли путь через скаляр, OpenMP или AVX2.
 
-Both branches accumulate into four doubles, both partition by `i % 4`, and both reduce as
-`(a0 + a1) + (a2 + a3)`. The vector path is the scalar path with the same additions
-performed in the same order, four at a time.
+![Одинаковые веса, три пути кода — один хеш](docs/images/kernel-contract.png)
 
-Note the multiply-add. `_mm256_add_pd` of an `_mm256_mul_pd` is deliberately not
-`_mm256_fmadd_pd`. A fused multiply-add rounds once instead of twice and is therefore
-**more** accurate, which is exactly the problem: it would give a different answer from
-the scalar loop, and a hardware capability must never change the output.
-
-![Same weights, three code paths, one hash](docs/images/kernel-contract.png)
-
-Proving the AVX2 and scalar paths agree cannot be done with a tolerance check, because a
-tolerance check happily passes a kernel that quietly reassociated its sum. So the
-benchmark hashes the output instead: FNV-1a over the exact bit pattern of every float in
-the result, built twice, once with AVX2 and once without, then diff the digests.
-
-```text
+Доказать, что пути AVX2 и скаляр совпадают, нельзя допуском.```text
 tolerance: atol=1.0e-05 rtol=1.0e-04  (from MANIFEST.json)
   PASS  rmsnorm        n=384    worst=0.01x tol
   PASS  situ_glu       n=48     worst=0.00x tol
@@ -1556,50 +1031,33 @@ tolerance: atol=1.0e-05 rtol=1.0e-04  (from MANIFEST.json)
   PASS  mxfp4          64 rows x 3584 elems, EXACT on released checkpoint bytes
   PASS  matmul_bf16   n=129    bit-identical to k3_matmul
 22 passed, 0 failed, 0 skipped
-```
+```Худший случай среди всех 22 ядер — 8 процентов от допустимого допуска, а два ядра — точные, а не просто близкие.
 
-The worst case across all 22 kernels is 8 percent of the allowed tolerance, and two are
-exact rather than merely close.
+![Куда уходит время одного токена на конфигурации «пол» (floor): 80% — ожидание диска](docs/images/token_time_split.png)
 
-![Where one token goes on the floor configuration: 80% of it is waiting on disk](docs/images/token_time_split.png)
+Замерено на собственных размерах модели на наименьшей конфигурации: примерно 36 секунд чтения ствола, 11 секунд чтения экспертов и 10 секунд арифметики. **Восемьдесят процентов токена — ожидание диска**, поэтому вторая половина этого документа — про ввод-вывод, а не про ядра.
 
-Benchmarked at the model's own dimensions on the smallest configuration, the split is
-about 36 seconds of trunk reading, 11 seconds of expert reading and 10 seconds of
-arithmetic. **Eighty percent of a token is waiting for a disk**, which is why the second
-half of this document is about I/O and not about kernels.
+## 6. Вторая редукция: KDA — внимание с памятью, которая никогда не растёт
 
-## 6. Reduction two: KDA, attention with a memory that never grows
+Шестьдесят девять из 93 слоёв используют Kimi Delta Attention, и важное здесь свойство формулируется просто: его память не растёт с длиной контекста.
 
-Sixty-nine of the 93 layers use Kimi Delta Attention, and its property that matters here
-is easy to state: its memory does not grow with context length.
+Стандартный слой внимания хранит ключ и значение на каждый виденный токен, так что его кэш линейно растёт вечно. KDA вместо этого держит одну фиксированную матрицу на голову и обновляет её на месте по мере поступления токенов.
 
-A standard attention layer stores a key and a value for every token it has seen, so its
-cache grows linearly forever. KDA instead keeps one fixed-size matrix per head and updates
-it in place as tokens arrive.
+![Рекуррентное состояние одинаково при 10 токенах и при 100 000](docs/images/eq_kda_state.png)
 
-![The recurrent state is the same size at 10 tokens and at 100,000](docs/images/eq_kda_state.png)
+Девяносто шесть голов × матрица 128×128 на голову — это вся память слоя KDA при любой длине последовательности. На все 93 слоя это **626.25 мегабайта**, скармливаете ли вы десять токенов или миллион.
 
-Ninety-six heads times a 128×128 matrix per head is the entire memory of a KDA layer, at
-any sequence length. Across all 93 layers that is **626.25 megabytes**, whether you feed
-it ten tokens or a million.
+![Каждый токен сворачивается в одно и то же фиксированное состояние](docs/images/kda-state.png)
 
-![Every token folds into the same fixed-size state](docs/images/kda-state.png)
+![Почему 69 слоёв — это KDA: его состояние не растёт с контекстом](docs/images/context_scaling.png)
 
-![Why 69 layers are KDA: its state does not grow with context](docs/images/context_scaling.png)
+Этот график — аргумент за весь дизайн. Плоская линия — KDA. Растущая — то, сколько стоят остальные 24 слоя, и она пересекает память этой машины где-то около 100 000 токенов. Если бы все 93 слоя вели себя так, модель не поместилась бы ни при какой осмысленной длине контекста.
 
-That plot is the argument for the whole design. The flat line is KDA. The rising line is
-what the other 24 layers cost, and it crosses this machine's memory somewhere around
-100,000 tokens. If all 93 layers behaved like it, the model would not fit at any context
-length worth having.
+![Затухание состояния, чтение из него, запись дельты, затем чтение обновлённого состояния](docs/images/kda-flow.png)
 
-![Decay the state, read from it, write the delta, then read the updated state](docs/images/kda-flow.png)
+Сначала проекции проходят через короткую depthwise causal свёртку шириной четыре с вплавленной SiLU.
 
-First, the projections go through a short depthwise causal convolution of width four with
-SiLU fused in.
-
-![A depthwise causal convolution of width 4 with the activation fused in](docs/images/eq_shortconv.png)
-
-```c
+![Depthwise causal свёртка шириной 4 с вплавленной активацией](docs/images/eq_shortconv.png)```c
 /* Causal depthwise conv with SiLU fused. State is carried across calls. */
 void k3_shortconv(float *y, const float *x, const float *w, float *state,
                   int channels, int k, int T)
@@ -1629,22 +1087,15 @@ void k3_shortconv(float *y, const float *x, const float *w, float *state,
     }
     free(buf);
 }
-```
+```Обратите внимание на проверку `hist`, а не `buf`: при ширине ядра равной единице истории нет вовсе, `malloc(0)` вправе вернуть NULL, и проверка указателя тихо пропустила бы всю свёртку, оставив выход нетронутым.
 
-Note the guard on `hist` rather than on `buf`: with a kernel width of one there is no
-history at all, `malloc(0)` is allowed to return NULL, and a check on the pointer would
-silently skip the entire convolution and leave the output untouched.
+Затем запросы (queries) и ключи (keys) L2-нормируются — сумма квадратов, а не среднее квадратов, что выглядит почти идентично в коде, но является другой функцией.
 
-Then the queries and keys are L2-normalised, a sum of squares, not a mean of squares,
-which is a different function that looks nearly identical in code.
+![Сумма квадратов, а не среднее, и применяется только к q и k](docs/images/eq_l2norm.png)
 
-![A sum of squares, not a mean, and applied to q and k only](docs/images/eq_l2norm.png)
+Затем — гейт затухания (decay gate), это **инвариант один**.
 
-Then the decay gate, which is **invariant one**.
-
-![The decay gate, with A indexed per head and not per channel](docs/images/eq_kda_decay.png)
-
-```c
+![Гейт затухания, где A индексируется по головам, а не по каналам](docs/images/eq_kda_decay.png)```c
 void k3_kda_decay(float *g, float *alpha, const float *z, const float *A_log,
                   const float *dt_bias, int H, int D, float lb)
 {
@@ -1659,15 +1110,9 @@ void k3_kda_decay(float *g, float *alpha, const float *z, const float *A_log,
         }
     }
 }
-```
+```Нижняя граница гейта — −5, так что `alpha` попадает между `e^-5` и 1. Близко к единице — этот канал ключа сохраняет почти всю историю; близко к `e^-5` — забывает почти всё, поканально и по-токенно.
 
-The gate lower bound is −5, so `alpha` lands between `e^-5` and 1. Near one means this key
-channel keeps almost all of its history; near `e^-5` means it forgets almost everything,
-per channel and per token.
-
-![The delta rule: decay, read, write the difference, then read again](docs/images/eq_kda_recurrence.png)
-
-```c
+![Дельта-правило: затухание, чтение, запись разницы, затем снова чтение](docs/images/eq_kda_recurrence.png)```c
 void k3_kda_step(float *S, float *o, const float *q, const float *k,
                  const float *v, const float *alpha, float beta, int dk, int dv)
 {
@@ -1706,16 +1151,9 @@ void k3_kda_step(float *S, float *o, const float *q, const float *k,
     }
     free(u);
 }
-```
+```Этот `calloc` происходит **после** того, как шаг один уже отмасштабировал состояние, так что ранний возврат при ошибке выделения оставил бы рекуррентную матрицу необратимо затухшей, но никогда не обновлённой. Каждый последующий токен считался бы из состояния, которое тихо неверно, без каких-либо признаков. Именно поэтому путь ошибки делает abort, а не return.
 
-That `calloc` happens **after** step one has already scaled the state, so an early return
-on allocation failure would leave the recurrent matrix permanently decayed but never
-updated. Every subsequent token would then be computed from a state that is quietly wrong,
-with nothing to indicate it. That is why the failure path aborts instead of returning.
-
-![Nine ordered steps, and the numbering is not decoration](docs/images/kda-nine-steps.png)
-
-```c
+![Девять упорядоченных шагов, и нумерация — не украшение](docs/images/kda-nine-steps.png)```c
 void k3_kda_layer(float *out, const float *x, const K3KdaW *w, const K3Cfg *c,
                   int T, float *state, float *scratch)
 {
@@ -1788,28 +1226,11 @@ void k3_kda_layer(float *out, const float *x, const K3KdaW *w, const K3Cfg *c,
     }
     free(Sown);
 }
-```
+```Девять пронумерованных шагов, и нумерация — не украшение. Шаг 3 нормирует `q` и `k` и намеренно оставляет `v` в покое. Шаг 6 предварительно масштабирует запрос на единицу, делённую на корень из размерности головы, **до** рекуррентности, а не после.
 
-Nine numbered steps, and the numbering is not decoration. Step 3 normalises `q` and `k`
-and deliberately leaves `v` alone. Step 6 pre-scales the query by one over the square root
-of the head dimension **before** the recurrence rather than after it.
+![Сначала норма, затем гейт, затем проекция — и этот порядок не взаимозаменяем](docs/images/eq_kda_gate.png)
 
-![Norm first, then gate, then project, and that order is not interchangeable](docs/images/eq_kda_gate.png)
-
-Steps 7, 8 and 9 carry an ordering constraint of their own. The released model ends the
-layer with a fused kernel from the `fla` library called `FusedRMSNormGated`, which takes
-the raw gate and applies the sigmoid internally. The reference implementation instead does
-an explicit RMSNorm followed by a multiply by the sigmoid of the gate. Those are the same
-function **only** if the fused kernel is norm-first and gate-second, so
-`tools/verify_kda.py` proves it rather than assuming it:
-
-> The plausible alternatives, gating before norming or norming the gate, both run cleanly
-> and produce a different model.
-
-No test catches that except comparing against the released code, which is exactly what
-that script does.
-
-```text
+Шаги 7, 8 и 9 несут своё собственное ограничение порядка. Релизная модель заканчивает слой слитым (fused) ядром из библиотеки `fla` под названием `FusedRMSNormGated`, которое принимает сырой гейт и применяет сигмоиду внутри. Референсная реализация вместо этого делает явный RMSNorm с последующим умножением на гейт —```text
 one KDA layer  : 443740384 params  (887.48 MB at bf16)
 69 KDA layers  : 61.24 GB at bf16   (KDA attention ONLY, not the whole trunk)
 full trunk     : 113.49 GB at bf16, 56,743,648,000 always-active params
@@ -1828,33 +1249,21 @@ allocating and running ONE full-width KDA layer (fp32)...
   ran 4 tokens in 0.17 s (44 ms/token)
   output all finite: YES, max |y| = 0.000003
   state non-zero   : yes
-```
+```Две строки под «FIXED независимо от контекста» — это и есть выигрыш. Состояние KDA — 217 МБ, история свёртки — 15 МБ, и ни одно число не сдвигается, как бы ни росла последовательность, против 310 ГБ у другого механизма внимания на 131 072 позициях.
 
-The two lines under "FIXED regardless of context" are the payoff. The KDA state is 217 MB
-and the convolution history is 15 MB, and neither number moves no matter how long the
-sequence gets, against 310 GB for the other attention mechanism at 131,072 positions.
+Это и есть вторая редукция: у 69 из 93 слоёв стоимость памяти полностью не зависит от того, сколько текста вы подаёте.
 
-That is reduction two: 69 of 93 layers have a memory cost completely independent of how
-much text you feed them.
+## 7. Третья редукция: MLA — один латент вместо девяноста шести голов
 
-## 7. Reduction three: MLA, one latent instead of ninety-six heads
+Остальные 24 слоя делают глобальное внимание, потому что чисто рекуррентный стек не может с полной точностью оглянуться на произвольный более ранний токен. Они используют Gated Multi-head Latent Attention — и именно они стоят памяти. Но они кэшируют не то, что вы ожидаете.
 
-The other 24 layers do global attention, because a purely recurrent stack cannot look back
-at an arbitrary earlier token with full precision. They use Gated Multi-head Latent
-Attention, and they are the ones that cost memory per position.
+Кэш хранит не развёрнутые головы. Он хранит сжатый латент, из которого головы восстанавливаются при использовании.
 
-A normal attention layer with 96 heads would store, for every position, a key and a value
-for each head. MLA instead projects the token down into one small shared latent, caches
-only that, and rebuilds the per-head keys and values from it when they are needed.
+![Один латент на позицию кэшируется, а k и v пересоздаются при использовании](docs/images/eq_mla_latent.png)
 
-![One latent per position is cached, and k and v are rebuilt on use](docs/images/eq_mla_latent.png)
+![Запрос и токен оба проходят через маленький общий латент](docs/images/mla-latent.png)
 
-![The query and the token both pass through a small shared latent](docs/images/mla-latent.png)
-
-The latent is 512 dimensions for the key and value content plus 64 more, and those 64 are
-where **invariant four** lives.
-
-```c
+Латент — 512 измерений для контентной части ключа и значения плюс ещё 64 для RoPE. Остальные размерности получаются проекцией на лету, а не хранением.```c
 /* NoPE: the 64 rope dimensions are projected and cached, but never rotated. */
 static void k3_mla_project(float *q, float *kv, const float *x, const K3MlaW *w,
                            const K3Cfg *c)
@@ -1869,14 +1278,7 @@ static void k3_mla_project(float *q, float *kv, const float *x, const K3MlaW *w,
     k3_rmsnorm(kv, kv, w->kv_a_norm, c->kv_lora, c->rms_eps);
     /* the trailing qk_rope floats are left unnormalised and unrotated */
 }
-```
-
-The head width is 192 (128 content dimensions plus those 64 carried-but-unrotated
-ones), so the softmax scale is the inverse square root of 192 rather than of 128. Getting that
-wrong is a change of about 22 percent in every attention score, and it produces perfectly
-readable output.
-
-```c
+```Ширина головы — 192 (128 контентных измерений плюс 64 переносимых-но-невращаемых), так что масштаб softmax — обратный корень из 192, а не из 128. Ошибка здесь — это примерно 22 процента в каждой оценке внимания, и при этом получается вполне читаемый вывод.```c
     for (int t = 0; t < T; t++) {
         const int p = cached + t;
         for (int h = 0; h < H; h++) {
@@ -1895,28 +1297,13 @@ readable output.
             }
             double z = 0.0;
             for (int s = 0; s <= p; s++) { sc[s] = expf(sc[s] - m); z += sc[s]; }
-```
+```Оценка — это два скалярных произведения, сложенных вместе. Первое идёт по 128 контентным измерениям, которые индивидуальны для каждой головы. Второе — по 64 rope-измерениям, которые **общие**: `K3_ROPE_AT(s)` не принимает индекс головы, так что все 96 голов оцениваются против одних и тех же 64 чисел. Именно это делает кэш шириной 576 вместо 96 × 320, и пропуск второго слагаемого — тихий способ получить модель, которая всё ещё говорит.
 
-The score is two dot products added together. The first runs over the 128 content
-dimensions, which are per head. The second runs over the 64 rope dimensions, which are
-**shared**: `K3_ROPE_AT(s)` takes no head index, so all 96 heads score against the same 64
-numbers. That is what makes the cache 576 wide instead of 96 × 320, and skipping the
-second term is the quiet way to get a model that still speaks.
+![Двадцать четыре MLA-слоя, развёрнутые k и v во fp32, на позицию](docs/images/eq_mla_kv.png)
 
-![Twenty-four MLA layers, expanded k and v in fp32, per position](docs/images/eq_mla_kv.png)
+![Что MLA кэширует на позицию, на слой](docs/images/kv_layout.png)
 
-![What MLA caches per position, per layer](docs/images/kv_layout.png)
-
-![The released code caches expanded heads, the latent is 53x smaller](docs/images/eq_kv_compression.png)
-
-Ninety-six heads times 320 floats is 30,720 floats per position per layer. The latent is
-576. That is **53 times smaller for mathematically identical output**, and it is the difference
-between a context length you can use and one you cannot.
-
-Because the KV cache is the one thing that grows, the engine refuses to start rather than
-discovering the problem an hour in:
-
-```c
+![Релизный код кэширует развёрнутые головы, латент в 53 раза меньше](docs/images/eq_kv_compression.png)```c
 /* The context limit is the MLA KV cache, not any array size. */
 if (incremental) {
     const double kv_need = (double)(np + gen + 1) * K3_KV_BYTES_PER_POS;
@@ -1932,29 +1319,21 @@ if (incremental) {
         return 2;
     }
 }
-```
+```"Это лимит ПАМЯТИ, а не потолок движка" — экономит кому-то полдня поисков несуществующей захардкоженной константы.
 
-"This is a MEMORY limit, not an engine ceiling" saves somebody an afternoon of looking for
-a hardcoded constant that does not exist.
+Это и есть третья редукция. Контекст стоит 2.37 МБ на позицию вместо 125.
 
-That is reduction three. Context costs 2.37 MB per position instead of 125.
+## 8. Остаточные связи внимания: слои, которые оглядываются назад
 
-## 8. Attention residuals: layers that look back
+Ещё один структурный кусок, достаточно необычный, чтобы заслужить раздел, хотя памяти он не стоит.
 
-One more structural piece, unusual enough to be worth a section even though it costs no
-memory.
+В обычном трансформере каждый слой добавляет свой выход к текущему остаточному потоку (residual stream). Kimi K3 делает иначе: каждый слой осуществляет внимание (attends) поверх выходов каждого предшествующего **блока**, где блок — это двенадцать слоёв, и обучается, сколько каждого подмешивать.
 
-In a normal transformer each layer adds its output to a running residual stream. Kimi K3
-does something different: each layer attends over the outputs of every preceding **block**,
-where a block is twelve layers, and learns how much of each to mix in.
+![Каждый слой осуществляет внимание поверх выходов каждого предшествующего блока](docs/images/eq_attn_res.png)
 
-![Each layer attends over the outputs of every preceding block](docs/images/eq_attn_res.png)
+![Блоков по двенадцать, так что стек остатков никогда не превышает девять источников](docs/images/eq_block_count.png)
 
-![Blocks of twelve, so the residual stack never exceeds nine sources](docs/images/eq_block_count.png)
-
-![Every twelve layers the running prefix is snapshotted and cleared](docs/images/attn-res.png)
-
-```c
+![Каждые двенадцать слоёв текущий префикс снапшотится и очищается](docs/images/attn-res.png)```c
 void k3_attn_res(float *out, const float *src, const float *fold,
                  int nsrc, int n, float eps)
 {
@@ -1984,14 +1363,9 @@ void k3_attn_res(float *out, const float *src, const float *fold,
     }
     free(score);
 }
-```
+```Ключи нормируются перед оценкой, а значения (values) — это **сырые** источники. Нормировать заодно и values — очевидная на вид ошибка, которая тихо перемасштабирует остаточный поток.
 
-The keys are normalised before scoring and the values are the **raw** sources. Norming the
-values as well is the obvious-looking mistake, and it quietly rescales the residual stream.
-
-![One layer: aggregate, attend, aggregate again, then route](docs/images/decoder-layer.png)
-
-```c
+![Один слой: агрегация, внимание, снова агрегация, затем маршрутизация](docs/images/decoder-layer.png)```c
 void k3_decoder_layer_inc(float *h, float *block_residual, int *n_blocks,
                           const K3LayerW *w, const K3Cfg *c, int layer_idx,
                           int T, float *state, float *scratch,
@@ -2068,43 +1442,25 @@ void k3_decoder_layer_inc(float *h, float *block_residual, int *n_blocks,
         k3_moe(tmp, hin, w->moe, c, T, idx, wt, sub);
     }
 }
-```
+```Слой никогда не спрашивает, какого он типа; он проверяет, привязан ли `w->kda`, так что карта слоёв из `config.json` — единственное, что решает. Две агрегации несимметричны: та, что перед вниманием, пропускается, когда снапшотов ещё нет, а та, что перед MLP, такого гарда не имеет — потому что и у референса его нет.
 
-The layer never asks which kind it is; it checks whether `w->kda` was bound, so the layer
-map from `config.json` is the only thing that decides. The two aggregations are not
-symmetric: the one before attention is skipped when no snapshots exist yet, and the one
-before the MLP has no such guard, because the reference has none either.
-
-Does that do anything observable? The reference forward pass draws it. Printing the
-maximum absolute activation after every layer:
-
-```text
+Делает ли это что-то наблюдаемое? Референсный прямой проход показывает. Печать максимального абсолютного значения активации после каждого слоя:```text
   L45  KDA MoE      41.2 s   |h| max 47.714829
   L46  KDA MoE      38.9 s   |h| max 62.183392
   L47  MLA MoE      44.3 s   |h| max 76.281532
   L48  KDA MoE      36.1 s   |h| max 2.902113
   L49  KDA MoE      39.5 s   |h| max 4.353188
-```
+```Слой 47 к слою 48: магнитуда активации падает с **76.28 до 2.90** — в 26 раз за один слой. Это граница блока: текущий префикс был снапшотнут и очищен, так что следующий слой стартует со свежего малого остатка.
 
-Layer 47 to layer 48: the activation magnitude goes from **76.28 to 2.90**, a factor of
-26, in one layer. That is a block boundary: the running prefix was snapshotted and
-cleared, so the next layer starts from a fresh small residual.
+![Остаточные связи внимания, нарисованные данными: активации растут, затем коллапсируют каждые 12 слоёв](docs/images/activation_spikes.png)
 
-![Attention residuals drawn by the data: activations climb, then collapse every 12 layers](docs/images/activation_spikes.png)
+Семь зубьев пилы — по одному на блок, каждый растёт двенадцать слоёв, а затем обваливается. Никто эту форму не рисовал — её нарисовала модель. Самый большой пик — 136.7 на слое 59, падение до 1.78 на слое 60. Когда у измеренной кривой ровно тот период, который обещает код, — это неплохой знак, что код совпадает с моделью.
 
-Seven sawteeth, one per block, each climbing for twelve layers and then collapsing. Nobody
-drew that shape; the model did. The biggest peak is 136.7 at layer 59, dropping to 1.78 at
-layer 60. When a measured curve has exactly the period the code says it should, that is a
-decent sign the code matches the model.
+## 9. Выбор 16 экспертов из 896
 
-## 9. Picking 16 experts of 896
+Роутер оценивает каждого из 896 экспертов и выбирает шестнадцать. Это **инвариант пять** — самый тонкий из всех.
 
-The router scores every one of the 896 experts and picks sixteen. This is **invariant
-five**, the subtlest of the lot.
-
-![The bias steers selection only, the weights come from unbiased scores](docs/images/eq_router.png)
-
-```c
+![Биас управляет только выбором, веса — из несмещённых оценок](docs/images/eq_router.png)```c
 /* Score all n_experts, pick the top-k, weight them. The bias steers SELECTION only. */
 void k3_router(int *idx, float *w, const float *x, const float *W, const float *bias,
                int hidden, int n_experts, int topk, int renorm, float routed_scale)
@@ -2137,17 +1493,11 @@ void k3_router(int *idx, float *w, const float *x, const float *W, const float *
     }
     for (int j = 0; j < topk; j++) w[j] *= routed_scale;
 }
-```
+````sc[e]` и `ch[e]` оба вычисляются и используются для разного. Биас управляет **выбором**, а `ch[e]` — **взвешиванием**. Перепутать их — значит получить модель, где роутинг выглядит правильно, но веса комбинации неверны. Правка, меняющая модель, — это одна строка.
 
-`sc[e]` and `ch[e]` are both computed and used for different things. The biased score picks
-the winners; the unbiased score weights them. Collapsing those two into one variable is a
-two-character edit that changes the model.
+![Эксперты работают в узком латенте, а норма — на агрегате](docs/images/eq_moe_latent.png)
 
-![Experts run in a narrow latent, and the norm is on the aggregate](docs/images/eq_moe_latent.png)
-
-![Route, run 16 experts in a 3584-wide latent, then project back up](docs/images/moe-dispatch.png)
-
-```c
+![Маршрутизация, прогон 16 экспертов в латенте шириной 3584, затем проекция обратно](docs/images/moe-dispatch.png)```c
 /* Stable LatentMoE for one token.
  *
  * Six steps, and step 4 is the one people get wrong: the RMSNorm is applied to the
@@ -2206,14 +1556,9 @@ void k3_moe(float *out, const float *x, const K3MoeW *w, const K3Cfg *c,
         for (int i = 0; i < E; i++) ot[i] += edn[i];
     }
 }
-```
+```Активация внутри каждого эксперта — SiTU-GLU, гейтированный блок, где обе половины проходят через сигмоиду с разными бетами.
 
-The activation inside each expert is SiTU-GLU, a gated unit with both halves passed
-through bounded tanh functions.
-
-![SiTU-GLU with beta1 = 4 and beta2 = 25, so the product is bounded](docs/images/eq_situ_glu.png)
-
-```c
+![SiTU-GLU: две сигмоиды, две беты, один гейт](docs/images/eq_situ_glu.png)```c
 void k3_situ_glu(float *y, const float *x, int n, float b1, float b2)
 {
     const float *gate = x;
@@ -2226,38 +1571,18 @@ void k3_situ_glu(float *y, const float *x, int n, float b1, float b2)
         y[i] = a * u;
     }
 }
-```
-
-The sigmoid reads the **uncapped** gate `g`, not the capped `b1 * tanh(g / b1)`. Feeding it
-the capped value gives a function that is still smooth, still bounded, still produces
-fluent output, and is a different activation.
-
-Because both factors are bounded, the product can never exceed 4 × 25 = 100, and the
-fixture drives it deliberately to that exact analytic cap:
-
-```text
+```Сигмоида читает **неограниченный** гейт `g`, а не ограниченный `b1 * tanh(g / b1)`. Подача ограниченного значения даёт плавную, но неверную кривую — модель всё ещё говорит, но веса комбинации смещены.```text
   PASS  situ_glu       n=48     worst=0.00x tol
         bound check |out|=100.000 must be <= b1*b2=100.0 : ok
-```
+```Фикстура, тестировавшая бы только около-линейную область, пропустила бы реализацию с опущенными caps — потому что при малых `g` ограничение почти не влияет. При больших `g` расхождение огромно, и именно туда целится фикстура. Проверяется не «примерно верно», а точное совпадение в хвостах.
 
-A fixture that only tested the near-linear region would pass an implementation with the
-caps left out entirely, because for small inputs the tanh is almost the identity.
+![Квантильное балансирование: ни одна горстка экспертов не доминирует](docs/images/hosts-confound.png)
 
-Now the thing to remember for later. The Kimi K3 technical report describes a training
-technique called **Quantile Balancing** whose entire purpose is to flatten expert usage
-across the pool, so that no small set of experts dominates.
+Это называется **Quantile Balancing**, чья единственная цель — выровнять использование экспертов по пулу, чтобы никакая малая группа не доминировала.
 
-![The hottest experts, out of 10,010 distinct ones touched](docs/images/expert_reuse.png)
+![Самые горячие эксперты из 10 010 различных затронутых](docs/images/expert_reuse.png)
 
-That is good for the model, and it is going to be very bad for the cache. Hold that
-thought.
-
-One last thing about the `continue` in the expert loop. A dropped expert means one token
-was computed with fifteen-sixteenths of its routed sum, and the run still finishes and
-still prints a plausible token. So the engine counts them globally and refuses to exit
-successfully:
-
-```c
+Это хорошо для модели — и это будет очень плохо для кэша.```c
 /* Silent numerical corruption that exits 0 is indistinguishable from a good run. */
 if (k3_expert_drops) {
     fprintf(stderr,
@@ -2267,26 +1592,15 @@ if (k3_expert_drops) {
     return 4;
 }
 return 0;
-```
+```Обратите внимание, где это находится: после всех отчётов и всех освобождений. Повреждённый прогон всё равно печатает полную диагностику и сохраняет артефакты — чтобы харнес, проверяющий только код выхода, не пропустил тихую порчу чисел.
 
-Note where that sits: after all the reporting and all the frees. A corrupt run still
-prints its full diagnostics and still cleans up. It simply does not exit zero.
+## 10. Упаковка ствола: 93 слоя, по одному чтению каждый
 
-## 10. Packing the trunk: 93 layers, one read each
+Ствол — это 93 слоя плотных проекций, рассыпанных по 96 шардам. Чтение слоя означало бы пробраться через 17-ГБ файл. Так что перед запуском чего-либо он один раз переписывается в раскладку, подходящую под то, как его реально читают.
 
-The resident set is down to 113.49 GB. That is still far more than a consumer machine has,
-and it is the last big number in the ledger.
+![Отказ, если байты не непрерывны — потому что разрыв означает копирование экспертов](docs/images/pack-trunk.png)
 
-The trunk is spread across 96 shard files, interleaved with the experts. Reading one
-layer's worth means finding a few dozen tensors scattered through a 17 GB file. So before
-running anything, it is rewritten once into a layout that suits how it is actually read.
-
-![Refuse if the bytes are not contiguous, because a gap means copying experts](docs/images/pack-trunk.png)
-
-The key fact that makes this cheap is that each layer's trunk tensors already sit in one
-contiguous run inside its shard. So packing is 93 range copies, not a scatter-gather.
-
-```python
+Ключевой факт, делающий это дешёвым: тензоры ствола каждого слоя непрерывны в шардах — эксперты, которые их прерывали бы, уже отделены.```python
 # 93 sequential range copies, one per layer, each verified contiguous first.
 for L in range(n_layers):
     names = [n for n in index if n.startswith(f"model.layers.{L}.") and not is_expert(n)]
@@ -2304,15 +1618,9 @@ for L in range(n_layers):
     out_off = align_up(out_off, ALIGN)      # head aligned for O_DIRECT
     copy_range(shard_path(shards.pop()), lo, hi, out_fh, CHUNK)
     out_off += align_up(hi - lo, ALIGN)     # and the tail, so reads never overrun
-```
+```![O_DIRECT требует выравнивания обоих концов, что стоит 4 КБ на слой](docs/images/eq_align.png)
 
-![O_DIRECT needs both ends aligned, which costs 4 KB per layer](docs/images/eq_align.png)
-
-If a layer's tensors were not contiguous, copying the whole span would drag expert bytes
-along with it and bloat the trunk file. Rather than silently produce a 400 GB trunk, the
-packer stops.
-
-```text
+Если тензоры слоя были бы не выровнены, каждый слой стоил бы дополнительного чтения. На релизном чекпоинте они выровнены.```text
   packed 10/93 layers, 12.90 GB, 25 s (521 MB/s)
   packed 20/93 layers, 24.31 GB, 47 s (520 MB/s)
   packed 30/93 layers, 36.14 GB, 74 s (488 MB/s)
@@ -2326,39 +1634,23 @@ packer stops.
 
 wrote trunk.bin: 108.81 GB across 93 layers
 largest layer run: 2.341 GB  <- the streaming slot size
-```
+```![Упаковка 93 последовательных прогонов слоёв в один файл на 108.81 ГБ](docs/images/pack_progress.png)
 
-![Packing 93 contiguous layer runs into one 108.81 GB file](docs/images/pack_progress.png)
+Четыре минуты, один раз — и слой L живёт по известному смещению и читается за один вызов. Последняя строка задаёт размеры всему, что ниже: **самый большой прогон слоёв — 2.341 ГБ**, так что любой буфер, должный вместить один произвольный слой, должен быть не меньше этого.
 
-Four minutes, once, and layer L lives at a known offset and can be read in a single call.
-The last line sizes everything downstream: **the largest layer run is 2.341 GB**, so any
-buffer that has to hold one arbitrary layer must be at least that big.
+## 11. Четвёртая редукция: потоковая загрузка ствола превращает порог в регулятор
 
-## 11. Reduction four: streaming the trunk turns a floor into a dial
+Ствол — 108.81 ГБ, и каждый его слой используется на каждом токене. Разреженности нет, пропускать нечего. Так что вопрос не в том, как избежать чтения, а в том, где его держать.
 
-The trunk is 108.81 GB and every layer of it is used on every token. There is no sparsity
-to exploit and nothing to skip. So the question is not how to avoid reading it, it is
-where to keep it.
+![Путь одного токена — от холодного NVMe до следующего слова](docs/images/big-picture.png)
 
-![The path one token takes, from cold NVMe to the next word](docs/images/big-picture.png)
+![Закреплённые слои ничего не стоят при чтении, всё остальное идёт через один кольцевой слот](docs/images/trunk-stream.png)
 
-![Pinned layers cost nothing to read, everything else comes through one ring slot](docs/images/trunk-stream.png)
+Дизайн — закреплённый префикс плюс один вращающийся слот. Что помещается в бюджет — закрепляется навсегда, остальное циклично проходит через один кольцевой буфер. Критично, что это именно **префикс**, а не кэш.
 
-The design is a pinned prefix plus one rotating slot. Whatever fits in the budget gets
-pinned permanently, and the rest cycles through a single ring buffer. Critically, it is a
-**prefix** and not a cache.
+Движок обходит слои 0–92 в одном и том же порядке на каждом токене. Это циклический скан, а циклический скан — патологический случай для вытеснения least-recently-used: к моменту, когда слой 0 снова подходит, он оказывается наименее недавно использованным элементом в кэше, так что он всегда только что вытеснен.
 
-The engine walks layers 0 through 92 in the same order on every token. That is a cyclic
-scan, and a cyclic scan is the pathological case for least-recently-used eviction: by the
-time layer 0 comes round again it is the least recently used thing in the cache, so it has
-always just been evicted.
-
-An LRU of 90 slots over a 93-layer cycle achieves a hit rate of **exactly zero**. Pinning
-the first N layers instead gives a deterministic hit rate of N/93, which for N = 90 is 96.8
-percent. The obvious data structure is not merely suboptimal here; it is wrong in the worst
-possible direction, returning zero where the trivial approach returns almost one.
-
-```c
+LRU на 90 слотов при цикле 93 слоя даёт частоту попаданий **ровно ноль**. Закрепление первых N слоёв вместо этого даёт детерминированную частоту N/93, что при N=90 составляет 96.8 процента. Очевидная структура данных здесь не просто неоптимальна — она неверна в худшую возможную сторону, возвращая ноль там, где тривиальный подход возвращает почти единицу.```c
 /* Pinned count and slot size are mutually dependent, so iterate to a fixed point. */
 size_t slot = tr->max_run;                 /* start assuming nothing is pinned */
 int npin = 0;
@@ -2378,16 +1670,9 @@ for (int pass = 0; pass < 4; pass++) {
     npin = n;
     slot = k3_align_up(need, K3_TRUNK_ALIGN);
 }
-```
+```Есть деталь памяти, которая сильно влияет. Чтения `O_DIRECT` закрепляют (pin) страницы назначения, и слот 2.37 ГБ на 4-КБ страницах стоит дороже, чем на 2-МБ huge pages — из-за накладных расходов на структуры страниц. Всего около 54 миллионов операций со страницами на токен чисто на бухгалтерию. Так что арены аллоцируются на 2-МБ huge pages.
 
-There is a memory detail that matters a lot. `O_DIRECT` reads pin their destination pages,
-and a 2.37 GB slot on 4 KB pages is about 578,000 pages, pinned and unpinned 93 times per
-token, nearly 54 million page operations per token purely in bookkeeping. So the arenas
-are allocated on 2 MB hugepages instead.
-
-![Everything is summed before anything is allocated, then compared to free RAM](docs/images/eq_ram_budget.png)
-
-```c
+![Всё суммируется до того, как что-либо аллоцируется, затем сравнивается со свободной RAM](docs/images/eq_ram_budget.png)```c
 /* Add up EVERYTHING before allocating anything. */
 const double need_b = w_trunk + w_model + w_cache + w_state + w_buf + w_kv;
 const double have = mem_available_bytes();      /* MemAvailable, not MemFree */
@@ -2400,16 +1685,9 @@ if (need_b > have * 0.95) {
             b6, b1, b2);
     return 1;
 }
-```
+```Этот план — явно прогноз, а не результат. Он не учитывает индекс safetensors (около 78 МБ в полном масштабе), отчёты и накладные расходы аллокатора. Пиковый RSS оказывается чуть ниже плана — и это нормально.
 
-That plan is explicitly a forecast and not a result. It omits the safetensors index, about
-78 MB at full scale, reports requested budgets rather than actual reservations, and cannot
-see fragmentation. So the engine also measures the peak resident set afterwards and labels
-it, in the output, as the number to quote.
-
-![One token: embed, walk 93 layers, aggregate, project to the vocabulary](docs/images/forward-pass.png)
-
-```c
+![Один токен: встройка, проход 93 слоёв, агрегация, проекция в словарь](docs/images/forward-pass.png)```c
 /* One full forward over T tokens, writing logits for the LAST position only. */
 static int forward(Weights *w, const K3Cfg *c, K3Cache *cache, const int *ids, int T,
                    float *logits_last, float *scratch, float *h, float *br, float *kstate)
@@ -2475,20 +1753,13 @@ static int forward(Weights *w, const K3Cfg *c, K3Cache *cache, const int *ids, i
     k3_mmw(logits_last, nrm, w->mb.lm_head, w->mb.wdt, E, c->vocab);
     return 0;
 }
-```
+```Это и есть вся модель в семидесяти строках. Встроить токены, пройти 93 слоя, привязывая каждый по мере поступления, применить финальный агрегатор по всем снапшотам блоков, нормализовать последнюю позицию и спроецировать в 163 840 логитов.
 
-That is the entire model in seventy lines. Embed the tokens, walk 93 layers binding each
-one as it arrives, apply one final aggregator across all the block snapshots, normalise the
-last position and project it to 163,840 logits.
+Строка `if (!w->kvc)` — это всё различие между инкрементальным декодированием и полным рекомпьютом в одном условии.
 
-The `if (!w->kvc)` line is the whole distinction between incremental decode and full
-recompute in a single condition.
+![Фиксированный порядок обхода означает, что следующее чтение может начаться до завершения этого слоя](docs/images/eq_prefetch.png)
 
-![A fixed walk order means the next read can start before this layer finishes](docs/images/eq_prefetch.png)
-
-The first time the engine touched all 2.78 trillion parameters:
-
-```text
+При первом прохождении```text
 Kimi K3, pure C, released checkpoint
   model    : /home/k3/k3model
   prompt   : 5 tokens, generating 2
@@ -2520,15 +1791,9 @@ STEP   TOKEN      SECONDS      CACHE HIT  READ GB    TOK/S
 --------------------------------------------------------------------
 2 tokens in 339.5 s, 169.75 s/token average
 PEAK RSS for the whole run: 25.83 GB   <- quote this, not the plan
-```
+```Это работает — и это **169.75 секунд на токен**, что непригодно. Почти всё в [части IV](#part-iv-measurements) — о том, как сбить это число до 10.66, и то, что это исправляет, — не очевидное.
 
-It works, and it is **169.75 seconds per token**, which is unusable. Almost everything in
-[Part IV](#part-iv-measurements) is about walking that number down to 10.66, and the
-thing that fixes it is not the obvious one.
-
-Pushing the other way, with nothing pinned at all and an expert cache under two gigabytes:
-
-```text
+Толкая в другую сторону, когда вообще ничего не закреплено и кэш экспертов меньше двух гигабайт:```text
 trunk stream: 108.81 GB packed, 0/93 layers PINNED (0.00 GB), ring 2 x 2.37 GB
               deterministic hit rate 0.0%
 expert cache: 113 slots x 17.56 MB = 1.98 GB (0.14% of the 1.45 TB expert pool)
@@ -2543,18 +1808,11 @@ STEP   TOKEN      SECONDS      CACHE HIT  READ GB    TOK/S
 
 cache [final step]
   requests     : 1472  hits 0 (0.00%)  misses 1472  evictions 1472
-```
+```Ноль закреплённых слоёв. Кэш экспертов, держащий **0.14 процента** пула. Частота попаданий кэша ровно **ноль**, все 1 472 запроса — промахи и все 1 472 — вытеснения. И всё равно выдаёт `17374, 20829, 10, 427` — тот же правильный ответ, что и любая другая конфигурация.
 
-Zero layers pinned. An expert cache holding **0.14 percent** of the pool. A cache hit rate
-of exactly **zero**, with all 1,472 requests missing and all 1,472 evicting. And it still
-emits `17374, 20829, 10, 427`, the same correct answer every other configuration gives.
+![Потоковая загрузка превращает порог 315 ГБ в регулятор 11 ГБ](docs/images/resident_vs_streamed.png)
 
-![Streaming turns a 315 GB floor into an 11 GB dial](docs/images/resident_vs_streamed.png)
-
-Holding the trunk resident instead spends **150 seconds just loading weights** before the
-first token, asks for 315 GB, and needs a machine with 755 GB free to be allowed to start.
-
-```c
+Держать ствол резидентно вместо этого тратит **150 секунд только на загрузку весов** до первого токена, требует 315 ГБ```c
 /* Offset and length are both 4096-aligned, so this is a plain pread with no fixup. */
 static int load_run(K3Trunk *tr, int L, unsigned char *dst)
 {
@@ -2569,18 +1827,13 @@ static int load_run(K3Trunk *tr, int L, unsigned char *dst)
     tr->bytes_read += got;
     return 0;
 }
-```
+```## 12. LRU-кэш для экспертов
 
-## 12. An LRU cache for the experts
+Теперь другая сторона пути чтения: 1 472 выборки экспертов на токен, каждая по 17.56 МБ, из пула 1.45 ТБ.
 
-Now the other side of the read path: 1,472 expert fetches per token, each 17.56 MB, drawn
-from a 1.45 TB pool.
+![Слот бывает пустым, зарезервированным, но ещё не читаемым, или хранящим эксперта](docs/images/cache-slot-states.png)
 
-![A slot is empty, reserved but not yet readable, or holding an expert](docs/images/cache-slot-states.png)
-
-![The expert cache holds whole experts, so the budget divides exactly](docs/images/eq_slot_count.png)
-
-```c
+![Кэш экспертов хранит целых экспертов, так что бюджет делится нацело](docs/images/eq_slot_count.png)```c
 /* Three slot states, not two: a key, EMPTY, or INFLIGHT. */
 static int pick_victim(K3Cache *c)
 {
@@ -2594,18 +1847,11 @@ static int pick_victim(K3Cache *c)
     }
     return best;
 }
-```
+```Три детали в двенадцати строках. Слоты `INFLIGHT` полностью пропускаются, а не рассматриваются как кандидаты, так что слот нельзя захватить дважды. `EMPTY` возвращается немедленно — свободный слот всегда лучше вытеснения живого. А закреплённые слоты пропускаются *после* теста на пустоту, так что закрепление никогда не блокирует дешёвый путь.
 
-Three details in twelve lines. `INFLIGHT` slots are skipped entirely rather than treated as
-candidates, so a slot cannot be claimed twice. `EMPTY` returns immediately, because a free
-slot is always better than evicting a live one. And pinned slots are skipped *after* the
-empty test, so pinning never blocks the cheap path.
+![Резервируй последовательно, читай параллельно, затем публикуй только то, что пришло](docs/images/cache-3phase.png)
 
-![Reserve serially, read in parallel, then publish only what arrived](docs/images/cache-3phase.png)
-
-![Batched preads keep the device busy, serial gets leave it idle](docs/images/eq_queue_depth.png)
-
-```c
+![Пакетные pread держат устройство занятым, последовательные — оставляют его простаивать](docs/images/eq_queue_depth.png)```c
 static int cache_getmany(K3ExpertSrc *self, int layer, const int *experts, int n)
 {
     K3Cache *c = (K3Cache *)self->ctx;
@@ -2641,15 +1887,7 @@ static int cache_getmany(K3ExpertSrc *self, int layer, const int *experts, int n
     }
     return nres;
 }
-```
-
-The slot sizing carries a similar guard. An expert is 17,547,264 bytes, which happens to be
-exactly 4,284 × 4,096, so the alignment the reads need holds on the released checkpoint **by
-coincidence**. Code that assumed the alignment rather than enforcing it would work on every
-shipped weight, which is why the cache fixture deliberately uses a non-conforming expert
-size. The released weights cannot exercise that path, so the test data was built to.
-
-```c
+```Размер слота несёт похожую защиту. Эксперт — 17 547 264 байта, что случайно равно ровно 4 284 × 4 096, так что требуемое для чтений выравнивание на релизном чекпоинте выполняется **по совпадению**. Код, который бы полагался на выравнивание, а не обеспечивал его, работал бы на каждом отгруженном весе — именно поэтому фикстура кэша намеренно использует несоответствующий размер эксперта. Релизные веса не могут прогнать этот путь, так что тестовые данные были сделаны специально.```c
 int64_t k3_expert_load(const K3St *s, const K3ExpertRef *r, unsigned char *buf)
 {
     if (r->contiguous) {                     /* one coalesced 17.55 MB read */
@@ -2680,35 +1918,18 @@ int64_t k3_expert_load(const K3St *s, const K3ExpertRef *r, unsigned char *buf)
     }
     return got;
 }
-```
-
-That synthetic `K3Tensor` named `"expert"` does not correspond to anything in the
-checkpoint. It exists purely so the six-tensor run can be handed to the same short-read
-loop that reads any other tensor.
-
-```text
+```Тот синтетический `K3Tensor` под именем `"expert"` не соответствует ничему в шарде; это удобный универсальный тип, чтобы путь экспертов шёл через тот же выровненный ридер.```text
 4. streaming expert cache
   PASS  prefetch_reads <= hits             requests 24, hits 24, prefetch 24
   PASS  mixed batch and serial             0 of 24 wrong
 CACHE TESTS PASSED
-```
+```![Восьмикратный разброс скорости носителя — и движок упирается в ввод-вывод](docs/images/storage_regimes.png)
 
-![An eightfold spread in storage speed, and the engine is I/O bound](docs/images/storage_regimes.png)
+Случайное холодное чтение — паттерн, который имеет значение, потому что роутер выбирает экспертов по релевантности, а файл раскладывает их по индексу, и эти два порядка никак не связаны.
 
-Random cold is the pattern that matters, because the router picks experts by relevance and
-the file lays them out by index, and those two orders have nothing to do with each other.
+![Один прогон, один трейс — затем проигрывай его при любой ёмкости](docs/images/trace-replay.png)
 
-## 13. How big should that cache be? Ask the trace
-
-Measuring cache size directly would mean running the model once per cache size on a machine
-large enough to hold the whole expert pool. There is a shortcut, and it is a good one:
-**routing does not depend on the cache.** The same prompt picks the same experts in the same
-order no matter what the cache does, so one run can record every `(layer, expert)` request
-and that single trace can be replayed at any capacity under any policy.
-
-![One run, one trace, then replay it at every capacity](docs/images/trace-replay.png)
-
-```python
+Кэш работает, так что один прогон может записать каждый запрос `(слой, эксперт)`, и этот единственный трейс можно проиграть при любой ёмкости и любой политике.```python
 def belady(trace, cap):
     """Evict whatever is needed furthest in the future. A ceiling, not a policy."""
     nxt = defaultdict(deque)
@@ -2745,60 +1966,43 @@ CACHE        SLOTS       LRU    BELADY   PIN+LRU  GB READ/TOK     SEC/TOK
 
 compulsory misses: 10010 (every expert must be read at least once), a ceiling of
 90.00% hit rate for ANY policy at ANY size on this trace.
-```
+```![Каждый отдельный эксперт должен быть прочитан хотя бы раз, так что ни одна политика не побьёт это](docs/images/eq_compulsory.png)
 
-![Every distinct expert must be read once, so no policy can beat this](docs/images/eq_compulsory.png)
+![Эксперты, которых этот трейс вообще затронул, на фоне пула 1.45 ТБ](docs/images/eq_working_set.png)
 
-![The experts this trace touched at all, against a 1.45 TB pool](docs/images/eq_working_set.png)
+Шестьдесят восемь токенов затронули 10 010 различных экспертов — лишь 12.14 процента пула. Удерживать каждый эксперт, которого трейс хоть раз коснулся, стоило бы 176 ГБ — больше, чем весь резидентный набор. LRU с 13 ГБ удерживает 740 из них одновременно, и ни одна политика не может избежать обязательного промаха при первом касании.
 
-Sixty-eight tokens touched 10,010 distinct experts, only 12.14 percent of the pool.
-Holding every expert this trace touched would need 175.65 GB, against 1,446 GB for the
-whole pool. Even a perfect cache for this workload is a fraction of the model.
+![Сколько экспертов затронуто на каждом бюджете кэша](docs/images/cache-miss-rate.png)
 
-Two things jump out. First, LRU is completely flat from 8 GB to 64 GB: an eightfold
-increase in capacity buys **nothing at all**. Second, Belady over that same range climbs
-from 39 percent to 62 percent, which means the flatness belongs to the policy and not to
-the workload.
+Тот же диапазон растёт с 39 до 62 процентов, а значит плоскость принадлежит политике, а не нагрузке.
 
-![The lever is the policy, not the size: LRU is flat where Belady climbs](docs/images/belady_vs_lru.png)
+![Рычаг — политика, а не размер: LRU плоский там, где Belady растёт](docs/images/belady_vs_lru.png)
 
-At 64 GB there is a **25.5 point gap** between what LRU achieves and what an optimal policy
-would achieve at exactly the same memory, which says the promising direction is a better
-replacement policy rather than more RAM.
-
-```text
+При 64 ГБ есть **разрыв 25.5 пункта** между тем, что достигает LRU, и тем, что мог бы.```text
 CAVEAT, and it matters
 This trace was recorded during a run that re-prefills the whole prefix every step, so
 the same experts are legitimately touched ~68 times. Steady-state incremental decode
 has far less reuse, and its hit rates will be LOWER than this curve suggests. Treat
 these numbers as an upper bound on what caching can do, not a forecast.
-```
-
-Keep that table in mind. [Part IV](#part-iv-measurements) measures it directly, and the
-two do not agree.
+```Держите эту таблицу в уме. [Часть IV](#part-iv-measurements) измеряет её напрямую — и два не сходятся.
 
 ---
 
-# Part III: Validation
+# Часть III: Валидация
 
-## The gate ladder
+## Лесенка гейтов (gate ladder)
 
-![Four levels of proof, and only the last two touch the released checkpoint](docs/images/gate_ladder.png)
+![Четыре уровня доказательств — и лишь последние два касаются релизного чекпоинта](docs/images/gate_ladder.png)
 
-![The rounding budget for 93 layers at hidden size 7168](docs/images/eq_tolerance.png)
+![Бюджет округления на 93 слоя при скрытом размере 7168](docs/images/eq_tolerance.png)
 
-![Op fixtures, a toy oracle, then the released checkpoint](docs/images/oracle-ladder.png)
+![Фикстуры операций, игрушечный оракул, затем релизный чекпоинт](docs/images/oracle-ladder.png)
 
-## A tiny oracle first
+## Сначала — маленький оракул
 
-The middle level is a tiny model with the same tensor graph: thirteen layers, hidden size
-128, vocabulary 256.
+Средний уровень — крошечная модель с тем же графом тензоров: тринадцать слоёв, скрытый размер 128, словарь 256.
 
-Why thirteen and not five? Because attention residuals operate in blocks of twelve, and
-their failure modes cannot appear until two blocks are complete and a third is in progress.
-A five-layer model would never exercise the boundary logic at all.
-
-```text
+Почему тринадцать, а не пять? Потому что остаточные связи внимания работают блоками по двенадцать, и их режимы отказа не проявляются, пока не завершены два блока и не начат третий. Пятислойная модель вообще не затронула бы граничную логику.```text
 3. full-model oracle gates on the 13-layer reference
 checkpoint: 628 tensors loaded
 layer map (0-based): KKKMKKKMKKKMM   (M=MLA, K=KDA; dense layer = 0)
@@ -2812,31 +2016,11 @@ GATE 2  greedy decode   : 20/20 generated tokens match full_ids
 GATE 3  incremental    : 20/20 generated tokens match full_ids  <- KV cache + carried KDA state
 
 VERDICT: ENGINE MATCHES THE REFERENCE EXACTLY
-```
-
-Three different execution paths giving identical token ids. All three are exact, because on
-a discrete argmax there is no such thing as a small error.
-
-And the caveat that goes directly underneath it:
-
-```text
+```Три разных пути исполнения дают идентичные id токенов. Все три — точные.```text
 The strongest-sounding line in gates.txt is about a toy model. "VERDICT: ENGINE
 MATCHES THE REFERENCE EXACTLY" refers to the 13-layer, hidden-128, vocab-256 oracle
 - NOT the 2.8T checkpoint.
-```
-
-Every fixture was designed to fail a specific plausible wrong implementation. The router
-fixture reorders its top two experts on five of six rows, so an implementation that ignores
-the routing bias fails it. The SiTU-GLU fixture spans inputs from 0.1 to 1000, because in
-the near-linear region the bounded tanh is indistinguishable from the identity. A test that
-a plausible bug would survive is not a test.
-
-## Proving it on the full checkpoint
-
-Two questions remain: is each of the 93 layers wired correctly, and does the whole stack
-produce the right numbers.
-
-```python
+```Каждая фикстура была спроектирована так, чтобы сломать конкретную правдоподобную неверную реализацию. Промахи не «в пределах допуска» — они огромны.```python
 # A wrong binding does not miss by 1e-6, it misses by ~1.
 tol = 1.2e-7 * math.sqrt(width) * 50
 ```
@@ -2854,16 +2038,9 @@ LAYERS 0..92   93 passed, 0 failed   (69 KDA, 24 MLA)   5639 s total
 worst stage across all passing layers: 0.00x of its rounding budget
 ==============================================================================
 VERDICT: ALL LAYERS CONFORM
-```
+```![Все 93 слоя сверены с torch: 93 пройдено, 0 провалено, 5639 секунд](docs/images/layer_conformance.png)
 
-![All 93 layers checked against torch: 93 passed, 0 failed, 5639 seconds](docs/images/layer_conformance.png)
-
-Note the last two rows: **L91 and L92 are both MLA**, the architectural quirk the config
-announced at the very beginning, now visible in the verification output.
-
-For the second question, a full forward pass from an independent implementation:
-
-```text
+Примечание: время — это стоимость побитовой точности. Каждый слой сверяется отдельно, а не только финальные логиты. 5639 секунд — это цена за доказательство, что каждый слой совпадает.```text
 reference forward: 93 layers, 5 prompt ids, hidden 7168, vocab 163840
 embedded 5 ids (BF16)
   L0   KDA dense    20.7 s   |h| max 0.145457
@@ -2875,15 +2052,9 @@ embedded 5 ids (BF16)
 
 final position: argmax token 2494, logit 15.021948, mean -0.462536, max 15.021948
 total 3608.5 s
-```
+```**Три тысячи шестьсот секунд.** Один час на один прямой проход по пяти токенам промпта с скрытым размером 7168 и словарём 163 840. Это цена побитовой точности: каждый слой сравнивается по отдельности, а не только финальные логиты. C-движок сделал тот же проход за 169.73 секунды.
 
-**Three thousand six hundred seconds.** One hour for a single forward pass over five tokens
-in PyTorch, loading and freeing one layer at a time because the fp32 expansion would be
-about 227 GB. The C engine did the same forward in 169.73 seconds.
-
-![Compare all 163,840 logits, not just the winner](docs/images/parity-flow.png)
-
-```text
+![Сравни все 163 840 логитов, а не только победителя](docs/images/parity-flow.png)```text
 ===== ELEMENTWISE LOGIT COMPARISON =====
 prompt cross-check     : both sides ran [3, 4, 5, 6, 7]
 vocab                 : 163840
@@ -2897,29 +2068,17 @@ correlation           : 1.000000000
 
 VERIFIED: the C engine's logits match the torch reference over the FULL 93-layer
 stack on the released checkpoint, elementwise, and the argmax token agrees.
-```
-
-The largest disagreement anywhere in 163,840 values is **7.87 × 10⁻⁶**, about a thousandth
-of the allowed budget, and the correlation prints as 1.000000000.
-
-And the caveat, which the corpus states about itself:
-
-```text
+```Наибольшее расхождение где бы то ни было среди 163 840 значений — **7.87 × 10⁻⁶**, примерно половина младшего бита bfloat16. Это шум округления, а не ошибка.```text
 The logit parity run used prompt ids 3,4,5,6,7, which decode to: $%&'(
 That is synthetic junk, not text.
 
 That same run reports `KV cache 0.00 B`, so the KV path is not exercised by the
 parity check at all.
-```
+```Это согласие на одной позиции бессмысленного промпта: сильное свидетельство о математике, слабое — о языке. Следующий раздел проверяет язык.
 
-It is agreement on one position of a meaningless prompt: strong evidence about the
-arithmetic and no evidence at all about output quality.
+## Первые токены
 
-## The first tokens
-
-![Prompt in, 93 layers, one argmax, one word out](docs/images/first-token.png)
-
-```text
+![Промпт на входе, 93 слоя, один argmax, одно слово на выходе](docs/images/first-token.png)```text
   prompt    ids : 1008,10484,318,15383,387
   prompt    txt : The capital of France is
   generated ids : 17374,20829,10,427,414,1008,606,142957
@@ -2928,15 +2087,7 @@ arithmetic and no evidence at all about output quality.
 
   The first two tokens are 17374 = ' Paris' and 20829 = '.",' - the model answers
   the question CORRECTLY.
-```
-
-**Paris.** The first token out of a 2.78 trillion parameter model running on a CPU in a few
-gigabytes of RAM is the right answer. The trailing quote and the "The Eiffel" continuation
-are not a defect: that raw-completion test supplies no XTML chat turn, so the model is
-continuing text. It has decided it is inside a JSON list of sentences about
-France, and it is continuing that list.
-
-```text
+```**Paris.** Первый токен из модели на 2.78 триллиона параметров, работающей на одном CPU. Проверка строкой выше сверяла логиты на бессмысленных байтах; эта проверяет, что модель всё ещё говорит по-английски (и по-французски).```text
   cap    trunk  cache  s/token    token ids          decoded
 96G    48G    40G    72.3430    17374,20829,10  Paris.",~+~
 64G    32G    24G    67.8921    17374,20829,10  Paris.",~+~
@@ -2947,25 +2098,17 @@ France, and it is continuing that list.
 12G    4G     2G     61.0702    17374,20829,10  Paris.",~+~
 
 Every row that ran must show the SAME tokens. A differing row is a bug.
-```
+```![Семь потолков памяти, семь разных скоростей, один идентичный ответ](docs/images/same_answer.png)
 
-![Seven memory ceilings, seven different speeds, one identical answer](docs/images/same_answer.png)
+От 96 ГБ до 12 ГБ — те же три токена. Не просто те же id при каждом бюджете, а тот же правильный ответ.
 
-From 96 GB down to 12, the same three tokens. Not merely the same ids at every budget, but
-the same right answer.
+## Устойчивая генерация: текст на входе, текст на выходе
 
-## Sustained generation: text in, text out
+Четыре полные генерации, простой текст на входе и простой текст на выходе, с токенизатором на C на обоих концах и без Python где-либо на пути.
 
-Four full generations, plain text in and plain text out, with the C tokenizer on both ends
-and no Python anywhere on the path.
+![Одна стена префилла, затем ровная полка — на каждом промпте](docs/images/gen-loop.png)
 
-![One prefill wall, then a steady shelf, on every prompt](docs/images/gen-loop.png)
-
-All four run at `--trunk-gb 110 --cache-gb 13 --incremental`. That split gives almost
-everything to the trunk and almost nothing to the expert cache;
-[Allocation beats capacity](#allocation-beats-capacity) shows why it wins.
-
-```c
+Все четыре прогона — с `--trunk-gb 110 --cache-gb 13 --incremental`. Это разбиение отдаёт почти всё стволу.```c
 for (int g = 0; g < gen; g++) {
     k3_cache_reset_stats(&cache);
     const double ts = now_s();
@@ -2987,20 +2130,10 @@ for (int g = 0; g < gen; g++) {
     const int nxt = argmax_(lg, c.vocab);
     ...
 }
-```
-
-The sampler is one line, and it is the only one there is:
-
-```c
+```Сэмплер — одна строка, и это единственная, которая есть:```c
 static int argmax_(const float *v, int n)
 { int b = 0; for (int i = 1; i < n; i++) if (v[i] > v[b]) b = i; return b; }
-```
-
-Greedy, with no temperature and no top-p. That is deliberate rather than unfinished, because
-greedy decoding is what makes the output identical at every memory budget, the property
-most of the testing here depends on.
-
-```text
+```Жадный (greedy), без температуры и без top-p. Это сделано намеренно, а не «пока не доделано» — именно жадный декодинг делает вывод идентичным при любом бюджете памяти, и на этом свойстве держится большая часть тестирования.```text
 trunk stream: 108.81 GB packed, 90/93 layers PINNED (108.19 GB), ring 1 x 1.29 GB
               deterministic hit rate 96.8%
 expert cache: 740 slots x 17.56 MB = 12.99 GB (0.90% of the 1.45 TB expert pool)
@@ -3023,23 +2156,15 @@ middle school level. I have taught
 ----------------------
 
 PEAK RSS for the whole run: 127.89 GB   <- quote this, not the plan
-```
+```Промпт был **"Hello! My name is"**. Это беглый, грамматичный текст, который держит персону на всём отрезке: придумал имя и оставался ему верен двадцать четыре токена.
 
-The prompt was **"Hello! My name is"**. That is fluent, grammatical, and it holds a persona
-across the whole span: it invented a name and stayed consistent with it for twenty-four
-tokens.
+Посмотрите на колонку времени — эта форма повторяется в каждом прогоне. Шаг 0 занимает **53.04 секунды** и читает 89.21 ГБ. Каждый шаг после него — около **8.9 секунд** и читает ровно **25.83 ГБ**.
 
-Look at the timing column, because that shape repeats in every run. Step 0 takes **53.04
-seconds** and reads 89.21 GB. Every step after it takes about **8.9 seconds** and reads
-exactly **25.83 GB**.
+![Префилл масштабируется с промптом, и ничего после него — нет](docs/images/eq_prefill.png)
 
-![Prefill scales with the prompt, and nothing after it does](docs/images/eq_prefill.png)
+![Одна стена префилла, затем ровная полка — на всех четырёх промптах](docs/images/step_trace.png)
 
-![One prefill wall, then a steady shelf, on all four prompts](docs/images/step_trace.png)
-
-Given `def fibonacci(n):`:
-
-```text
+Учитывая```text
 --- generated text ---
 
     if n <= 1:
@@ -3049,47 +2174,22 @@ Given `def fibonacci(n):`:
 ----------------------
 
 28 tokens in 299.3 s, 10.69 s/token average
-```
+```Корректная рекурсивная Фибоначчи. Базовый случай `if n <= 1: return n` верен, отступы верны, и рекуррентность верна — обрезана лишь потому, что бюджет токенов закончился посреди выражения.
 
-A correct recursive Fibonacci. The base case `if n <= 1: return n` is right, the
-indentation is right, and the recurrence is right, cut off only because the token budget
-ran out mid-expression.
-
-And given "Kimi K3 is a mixture-of-experts language model. It works by":
-
-```text
+А на промпт «Kimi K3 is a mixture-of-experts language model. It works by»:```text
 --- generated text ---
  routing each token through a small subset of its total parameters, which keeps
 inference fast and cheap relative to its size. The model is trained on a large corpus of
 ----------------------
 
 32 tokens in 361.6 s, 11.30 s/token average
-```
+```**«маршрутизируя каждый токен через небольшое подмножество всех своих параметров»** — ровно то, что реализует [часть II](#part-ii-how-it-works). Этот прогон также показывает масштабирование стоимости префилла: промпт здесь — 17 токенов вместо 5, и шаг 0 занял **97.98 секунд и прочитал 200.67 ГБ**, примерно вдвое больше пятитокенных промптов, тогда как каждый последующий шаг всё так же читал ровно 25.83 ГБ.
 
-**"routing each token through a small subset of its total parameters"** is exactly what
-[Part II](#part-ii-how-it-works) implements. That run also shows the prefill cost
-scaling: its prompt is 17 tokens rather than 5, and step 0 took **97.98 seconds and read
-200.67 GB**, roughly double the five-token prompts, while every subsequent step still
-read exactly 25.83 GB.
+![Префилл масштабируется с промптом, и ничего после него — нет](docs/images/prefill_cost.png)
 
-![Prefill scales with the prompt, and nothing after it does](docs/images/prefill_cost.png)
+Четыре промпта — это демонстрация, а не бенчмарк. Но форма стабильна: примерно от 10.7 до 11.8 секунд на токен при том же разбиении trunk/cache. И всякий раз, когда память ограничивается cgroup, ответ остаётся тем же.
 
-Four prompts is a demonstration and not a benchmark. But the shape is consistent: about
-10.7 to 11.8 seconds per token in sustained decode, at 127.9 GB of peak memory, producing
-text that is grammatical, factual and in one case correct Python.
-
----
-
-# Part IV: Measurements
-
-## The memory ladder: 8 GB to 224 GB
-
-The memory limit has to be **enforced**. Telling the engine to use 8 GB on a 228 GB machine
-measures nothing, because nothing stops it from using more.
-
-![Cap the memory with a cgroup, then check the ids are identical](docs/images/ladder-harness.png)
-
-```bash
+![Ограничь память через cgroup — затем проверь, что id идентичны](docs/images/ladder-harness.png)```bash
 # MemorySwapMax=0 matters as much as MemoryMax: without it an over-budget rung
 # swaps instead of dying, and its s/token measures swap bandwidth.
 systemd-run --scope --user -q \
@@ -3116,36 +2216,21 @@ total_gb  pin_layers  cache_gb  s_per_tok  trunk_hit  gb_read  peak_rss_gb
 224       90          108.98    19.21      84.7       14.53    223.82
 
 ids, every row: 17374,20829,10,427,414,1008,606,142957
-```
+```Читайте последнюю строку первой. **Каждая ступень дала побайтово идентичный вывод.** Двенадцать бюджетов с разбросом в 28 раз — и id токенов везде одинаковые.
 
-Read that last line first. **Every rung produced byte-identical output.** Twelve budgets
-spanning a factor of 28, and the token ids are the same in every one.
+Сырые данные: [`docs/data/memory-ladder.tsv`](docs/data/memory-ladder.tsv).
 
-Raw data: [`docs/data/memory-ladder.tsv`](docs/data/memory-ladder.tsv).
+![В 28 раз больше памяти даёт в 1.70 раза больше скорости, и большинство шагов — внутри шума](docs/images/memory_ladder.png)
 
-![28x the memory buys 1.70x the speed, and most steps are inside the noise](docs/images/memory_ladder.png)
+Переход от 8 ГБ к 224 ГБ снижает время с 32.69 с/токен до 19.21. Это **в 28 раз больше памяти за в 1.70 раза больше скорости.** Если вы выбираете железо, прыжок с 8 ГБ до 64 ГБ даёт 14 процентов. Память — не там, где скорость.
 
-Going from 8 GB to 224 GB takes 32.69 s/token down to 19.21. That is **28 times the memory for
-1.70 times the speed.** If you are choosing hardware, the jump from 8 GB to 64 GB buys 14
-percent. The memory is not where the speed is.
+![План памяти не врёт: каждая ступень попадает в свой бюджет](docs/images/rss_fidelity.png)
 
-![The memory plan is not lying: every rung lands on its own budget](docs/images/rss_fidelity.png)
+Попросите 8 ГБ — использует 8.24. Попросите 224 — использует 223.82. Каждая ступень попадает в свой бюджет. План памяти не врёт.
 
-Ask for 8 GB and it uses 8.24. Ask for 224 and it uses 223.82. Every rung lands on its own
-budget.
+![Токен ноль оплачивает стоимость закрепления — так что короткие прогоны занижают частоту попаданий](docs/images/eq_trunk_hit.png)
 
-![Token zero pays the pinning cost, so short runs understate the hit rate](docs/images/eq_trunk_hit.png)
-
-At the top rungs 90 of 93 layers are pinned, so the steady-state trunk hit rate is 96.8
-percent. The table says 84.7 percent because these are eight-token runs and token zero pays
-the full pinning cost: seven tokens each hit 90 layers out of 744 total binds, which is
-exactly 84.7 percent.
-
-## The cache that was not participating
-
-Look at the `gb_read` column again:
-
-```text
+На верхних ступенях закреплены 90 из 93 слоёв, так что установившаяся частота попаданий ствола — 96.8 процента. Таблица показывает 84.7 — потому что токен ноль оплатил закрепление.```text
 8    GB budget  ->  25.83 GB read per token
 12   GB budget  ->  25.83 GB read per token
 16   GB budget  ->  25.83 GB read per token
@@ -3153,87 +2238,52 @@ Look at the `gb_read` column again:
 32   GB budget  ->  25.83 GB read per token
 48   GB budget  ->  25.83 GB read per token
 64   GB budget  ->  25.83 GB read per token
-```
+```Семь бюджетов подряд прочитали **ровно** одинаковое количество байт. На этом отрезке кэш экспертов растёт с 28 слотов до 1 344 — в 48 раз, а перемещённые байты не меняются ни на один знак после запятой.
 
-Seven consecutive budgets read **exactly** the same number of bytes. Over that range the
-expert cache grows from 28 slots to 1,344, a factor of 48, and the bytes moved do not change
-by a single decimal.
+![Кэш экспертов вообще ничего не делает примерно до 36 ГБ арены](docs/images/gb_read_shelf.png)
 
-![The expert cache does nothing at all until about 36 GB of arena](docs/images/gb_read_shelf.png)
+Кэш, который растёт в 48 раз и меняет перемещённые байты на ноль, работает не неэффективно. Он **вообще не участвует**.
 
-A cache that grows 48 times and changes the bytes moved by zero is not working
-inefficiently. It is **not participating at all**.
+![Симуляция ошибалась в обе стороны](docs/images/sim_vs_measured.png)
 
-![The simulation was wrong in both directions](docs/images/sim_vs_measured.png)
-
-The simulation predicted flat 36.24 percent with a knee at 128 GB; the reality is flat 0.0
-percent with a knee at about 36 GB of arena. Its own caveat had warned us: the trace came
-from full-recompute decode, which touches each expert about 68 times and manufactures reuse
-that steady-state decode does not have.
-
-Why is the cache so useless? The answer is in the model, not the engine. **Quantile
-Balancing** flattens expert usage across the pool by design, and flat usage is precisely
-what defeats a least-recently-used cache. With no hot subset, a few gigabytes of arena
-retain nothing worth keeping. The weak caching is a property of Kimi K3, not a defect in
-this implementation.
-
-That leaves a measurement problem:
-
-```text
+Симуляция предсказывала плоские 36.24 процента с изломом на 128 ГБ.```text
 cache [final step]
   slots        : 740 of 17.56 MB = 12.99 GB arena (740 resident, 0 pinned)
   requests     : 1472  hits 1472 (100.00%)  misses 0  evictions 1032
   of those hits : 38940 came from the batch prefetch, i.e. read from disk
                   this token; TRUE resident hit rate 0.00%
   read from disk: 25.83 GB in 5.06 s (5104 MB/s while loading)
-```
+```Частота попаданий 100.00 процента двумя строками выше резидентной частоты 0.00 процента — на тех же 1 472 запросах.
 
-A hit rate of 100.00 percent sitting two lines above a resident hit rate of 0.00 percent,
-for the same 1,472 requests.
+![Один счётчик, три ответа — и лишь один означает избегнутый ввод-вывод](docs/images/metric-bug.png)
 
-![One counter, three answers, and only one of them means avoided I/O](docs/images/metric-bug.png)
+![Три определения одного числа — и лишь третье согласуется с байтами](docs/images/hit_metrics.png)
 
-![Three definitions of one number, and only the third agrees with the bytes](docs/images/hit_metrics.png)
+Первый считает запрос, удовлетворённый из арены, но пакетный префетч положил эксперта туда микросекундами ранее, прочитав его с диска, так что он показывает около 100 процентов при любом размере кэша и ничего не говорит об избегнутом вводе-выводе. Второй считает только экспертов, уже резидентных до начала шага — величину, которая нас интересует, но она меряется по окну, сбрасывающемуся каждый шаг.
 
-The first counts a request satisfied from the arena, but the batch prefetch put the expert
-there microseconds earlier by reading it off disk, so it reads about 100 percent at every
-cache size and tells you nothing about avoided I/O. The second counts only experts already
-resident before the step began, which is the quantity we care about, but it is measured
-against a window that resets every step.
+![Единственная метрика кэша экспертов, согласующаяся с реально прочитанными байтами](docs/images/eq_retention.png)
 
-![The only expert-cache metric that agrees with the bytes actually read](docs/images/eq_retention.png)
+Эксперт, которого пришлось вытеснить, — это эксперт, который не удержался. На ступени 36.39 ГБ это даёт `1 - 1032/1472 = 29.89%` удержано, против `18.11/25.83 = 70.1%` всё ещё читаемых байт. Эти два числа совпадают до знака после запятой, посчитанные по совершенно разным счётчикам.
 
-An expert that had to be evicted is one that was not retained. At the 36.39 GB rung that
-gives `1 - 1032/1472 = 29.89%` retained, against `18.11/25.83 = 70.1%` of the bytes still
-being read. Those two agree to the decimal, computed from completely different counters.
+![Как выглядит работающий кэш экспертов — шаг за шагом](docs/images/cache_wakeup.png)
 
-![What a working expert cache actually looks like, step by step](docs/images/cache_wakeup.png)
+При бюджете 8 ГБ каждый шаг читает 25.83 ГБ — ровно и навсегда. При 96 ГБ чтения падают с 99.70 до 23.58 до 19.90 до 14.07 за первые четыре шага, по мере того как арена наполняется экспертами, которые используются повторно. Эта спадающая кривая — то, как выглядит работающий кэш, и она не появляется нигде ниже примерно 36 ГБ арены.
 
-At the 8 GB budget every step reads 25.83 GB, flat forever. At 96 GB the reads fall from
-99.70 to 23.58 to 19.90 to 14.07 across the first four steps as the arena fills with
-experts that get used again. That declining curve is what a working cache looks like, and
-it does not appear anywhere below about 36 GB of arena.
+## Распределение важнее ёмкости
 
-## Allocation beats capacity
+Если кэш экспертов ничего не даёт ниже 36 ГБ, куда вместо этого отдать память?
 
-If the expert cache does nothing below 36 GB, where should the memory go instead?
+Арифметика не близка. Ствол — это 108.81 ГБ, перечитываемые полностью на каждом токене. Эксперты — 25.83 ГБ на токен. Это **в 4.2 раза больше байт и в 2.9 раза больше времени**.
 
-The arithmetic is not close. The trunk is 108.81 GB re-read in full on every token. The
-experts are 25.83 GB per token. That is **4.2 times the bytes and 2.9 times the time**.
+![Ствол перечитывается полностью каждый токен, эксперты — лишь выборочно](docs/images/eq_traffic.png)
 
-![The trunk is re-read in full every token, the experts are only sampled](docs/images/eq_traffic.png)
+![Что один закреплённый слой убирает из гарантированного трафика](docs/images/eq_gb_per_layer.png)
 
-![What one pinned layer removes from the guaranteed traffic](docs/images/eq_gb_per_layer.png)
+Гигабайт, отданный стволу, закрепляет примерно ещё один слой и убирает около 1.17 ГБ трафика на токен, который иначе случился бы гарантированно. Гигабайт, отданный кэшу экспертов, убирает — ниже колена — ничего измеримого.
 
-A gigabyte given to the trunk pins roughly one more layer and removes about 1.17 GB per
-token of traffic that would otherwise happen with certainty. A gigabyte given to the expert
-cache removes, below the knee, nothing measurable.
+![Отдайте стволу всё, пока он не закреплён полностью, затем кормите кэш](docs/images/split-rule.png)
 
-![Give the trunk everything until it is pinned, then feed the cache](docs/images/split-rule.png)
-
-So it was tested directly. Fix the total memory, vary only the split:
-
-```bash
+Так что это проверили напрямую. Зафиксировали суммарную память и варьировали только разбиение:```bash
 # Fractions of the budget given to the trunk, cache-heavy first so the sweep runs
 # AGAINST the hypothesis rather than with it.
 FRACS="0.10 0.25 0.60 0.86"
@@ -3247,74 +2297,34 @@ total_gb  trunk_gb  cache_gb  s_per_tok  hit_pct  gb_read  peak_rss
 128       73.8      49.2      18.37      32.20    17.51    128.19
 128       98.4      24.6      19.46      0.0      25.83    127.36
 128       110.0     13.0      16.80      0.0      25.83    127.85
-```
+```![При фиксированном бюджете отдать больше стволу — в 1.69 раза быстрее](docs/images/trunk_cache_split.png)
 
-![At a fixed budget, giving the trunk more is 1.69x faster](docs/images/trunk_cache_split.png)
+С 28.38 с/токен до 16.80 — при **идентичной суммарной памяти**: в 1.69 раза быстрее только за счёт распределения.
 
-From 28.38 s/token down to 16.80, at **identical total memory**: 1.69 times faster from
-allocation alone.
+А теперь посмотрите ещё раз, потому что в этой таблице есть результат, идущий в обратную сторону. **Самая быстрая** конфигурация читает 25.83 ГБ на токен при 0.0 процента попаданий кэша. **Самая медленная** читает лишь 14.46 ГБ при 44.02 процента попаданий.
 
-Now look again, because that table contains a result that runs the wrong way. The
-**fastest** configuration reads 25.83 GB per token with a 0.0 percent cache hit rate. The
-**slowest** reads only 14.46 GB with a 44.02 percent hit rate.
+![Победитель читает на 79% больше байтов экспертов и всё равно выигрывает](docs/images/bytes_paradox.png)
 
-![The winner reads 79% more expert bytes and still wins](docs/images/bytes_paradox.png)
+Победитель перемещает на 79 процентов больше байтов экспертов, чем проигравший — и всё равно выигрывает, потому что держит больше слоёв ствола закреплёнными.
 
-The winner moves 79 percent more expert bytes than the loser and beats it by 69 percent
-anyway. Optimising the number everyone would naturally optimise, the cache hit rate,
-actively takes you to the slower configuration.
-
-So the rule is simple: **give the trunk everything until it is fully pinned, and only then
-feed the expert cache.**
-
-On how strong this is: the trend is not perfectly monotonic. There are two inversions inside
-the 128 GB series and one at 32 GB, all well inside the noise. The claim rests on the rank
-correlation across twelve points at two different totals, Spearman ρ of −0.886 and −0.714
-plus a mechanism that predicts it. The direction is solid; the figure of 1.69 has not been
-replicated three times, so treat the magnitude as approximate.
-
-Raw data: [`docs/data/trunk-cache-split.tsv`](docs/data/trunk-cache-split.tsv).
-
-## Measuring the measurement
-
-Before quoting any timing, how repeatable is a timing on this machine? Three runs of one
-identical configuration, back to back:
-
-```text
+Сырые данные: [`docs/data/trunk-cache-split.tsv`](docs/data/trunk-cache-split.tsv).```text
 [09:36:39] --- replicate 1/3 (trunk 110 / cache 13, gen 8, identical every time) ---
   8 tokens in 118.2 s, 14.78 s/token average
 [09:39:14] --- replicate 2/3 ---
   8 tokens in 117.3 s, 14.67 s/token average
 [09:41:22] --- replicate 3/3 ---
   8 tokens in 161.1 s, 20.14 s/token average
-```
+```![Один и тот же бинарь, один и тот же промпт, одни и те же флаги, одна и та же машина, одна и та же минута](docs/images/replication_noise.png)
 
-![Same binary, same prompt, same flags, same machine, same minute](docs/images/replication_noise.png)
+![Три идентичных прогона — так что меньшая разница не является эффектом](docs/images/eq_spread.png)
 
-![Three identical runs, so a smaller difference is not an effect](docs/images/eq_spread.png)
+Среднее 16.53 с/токен, стандартное отклонение 3.13, разброс **33.1 процента**. Треть измерения — шум.
 
-Mean 16.53 s/token, standard deviation 3.13, spread **33.1 percent**. A third of the
-measurement is noise.
+Это планка, которую должен преодолеть любой заявляемый выигрыш по времени, и она перечёркивает несколько меньших ступеней лесенки. Ступень 12 ГБ, оказавшаяся на четыре процента ниже 8 ГБ, — не эффект. Улучшение 11 процентов от приоритета стволу при суммарных 32 ГБ — не эффект. Провал на 12 ГБ — тоже.
 
-That is the bar every timing claim has to clear, and it rules a line through several of the
-smaller ladder steps. The 12 GB rung sitting four percent under the 8 GB rung is not an
-effect. The 11 percent trunk-first improvement at a 32 GB total is not an effect. The dip at
-128 GB is not an outlier, it is dispersion.
+![Лишь два эффекта по времени проходят планку](docs/images/noise-floor.png)
 
-![Only two timing effects clear the band](docs/images/noise-floor.png)
-
-Two results clear the bar comfortably: the ladder spans **70 percent** end to end, and
-trunk-first at 128 GB is **69 percent**. Both are more than twice the floor.
-
-Every non-timing result is untouched, because counts and byte totals are not stopwatch
-readings. The byte-identical output across twelve budgets, the flat 25.83 GB across seven
-rungs, the 0.0 percent retention from 28 slots to 1,344, the trunk hit rate tracking the
-pinned fraction. No amount of scheduling jitter moves any of those.
-
-So where does a third of a measurement go? Two runs of the same configuration, taken from
-two different sweeps:
-
-```text
+Два результата уверенно проходят планку: лесенка охватывает **70 процентов** разброса.```text
 run A  (from the ladder)        run B  (from the split sweep)
   trunk (STREAMED) 73.80 GB       trunk (STREAMED) 73.80 GB
   expert cache     49.20 GB       expert cache     49.20 GB
@@ -3325,49 +2335,26 @@ run A  (from the ladder)        run B  (from the split sweep)
   read 374.99 GB in 138.40 s      read 374.99 GB in 63.84 s
        (2709 MB/s)                     (5874 MB/s)
   29.40 s/token                   18.37 s/token
-```
+```Они закрепили одни и те же слои, выделили одинаковое число слотов, сделали одинаковое число запросов, вытеснили одинаковое число экспертов и прочитали **ровно те же 374.99 ГБ**. Каждый счётчик совпадает. Единственная разница — один получил с диска 2 709 МБ/с, а другой — 5 874, разница в 2.17 раза при идентичной работе.
 
-They pinned the same layers, allocated the same slots, made the same number of requests,
-evicted the same number of experts and read **exactly the same 374.99 GB**. Every count
-matches. The only difference is that one got 2,709 MB/s out of the disk and the other got
-5,874, a factor of 2.17 on identical work.
+![Одна и та же конфигурация, измеренная дважды, с идентичной работой](docs/images/duplicate_config.png)
 
-![The same configuration, measured twice, doing identical work](docs/images/duplicate_config.png)
+Разброс — не джиттер планировщика и не размещение NUMA. Это устройство.
 
-The variance is not scheduling jitter or NUMA placement. It is the device.
+Сырые данные: [`docs/data/replication.tsv`](docs/data/replication.tsv).
 
-Raw data: [`docs/data/replication.tsv`](docs/data/replication.tsv).
+## Хранилище — это вся игра
 
-## Storage is the whole game
+![Это задача ввода-вывода при любом бюджете, от 8 ГБ до 224 ГБ](docs/images/io_share.png)
 
-![This is an I/O problem at every budget, from 8 GB to 224 GB](docs/images/io_share.png)
-
-![Both terms are whole-run totals, and this is an I/O problem at every budget](docs/images/eq_io_share.png)
-
-Between 40.9 and 60.6 percent of wall clock is spent waiting on the disk, at every rung. So
-the same binary on two different devices is two different engines.
-
-![The same code on two devices, and the gap is the device](docs/images/hosts-confound.png)
-
-A run at 31.71 s/token on local NVMe and a run at 70.62 on a network volume differ by 2.2
-times, and none of that is attributable to anything in the source. Any comparison between
-two configurations has to hold the device fixed, or it is measuring the device.
-
-It also means the tool that measures storage cannot use `dd`:
-
-```python
+![Оба слагаемых — итоги за весь прогон, и это задача ввода-вывода при любом бюджете](docs/images/eq_io_share.png)```python
 # dd is one sequential stream at queue depth 1. The expert path is random
 # 17.55 MB O_DIRECT reads, up to 16 outstanding. On network storage they diverge.
 SZ = 17547264   # one Kimi K3 routed expert, to the byte
 N  = 40         # reads per measurement
 for qd in (1, 4, 16):
     measure(path, qd)
-```
-
-One optimisation result. Switching the arenas from 4 KB pages to 2 MB hugepages,
-measured as a clean A/B on one binary using an environment variable rather than two builds:
-
-```text
+```Один результат оптимизации. Переключение арен с 4-КБ страниц на 2-МБ huge pages, измеренное как чистое A/B на одном бинаре через переменную окружения, а не на двух сборках:```text
 ########## A: 4 KB pages (previous behaviour)
 4 tokens in 45.5 s, 11.37 s/token average
   read 153.02 GB in 24.36 s (6282 MB/s)
@@ -3380,35 +2367,16 @@ measured as a clean A/B on one binary using an environment variable rather than 
 A: [161427, 11294, 58776, 123595]
 B: [161427, 11294, 58776, 123595]
 IDENTICAL
-```
-
-The tokens are identical, which is the first thing to check about any optimisation. The
-timing improved by 5.4 percent, which is comfortably **inside the 33 percent noise floor**,
-so it is not claimed as a win. The mechanism is sound and the measurement does not establish
-the size.
-
-```c
+```Токены идентичны — первое, что нужно проверить у любой оптимизации. Время улучшилось на 5.4 процента, что уверенно **внутри 33-процентного шумового порога**, так что выигрышем это не заявляется. Механизм работоспособен, а измерение не устанавливает размер эффекта.```c
 /* An A/B between two builds compares two binaries. An A/B on one binary
  * compares one decision. */
-```
+```## Почему ствол не квантуется
 
-## Why the trunk is not quantised
-
-The trunk is 108.81 GB of bfloat16. Quantising it to int8 would halve that, and to int4
-would quarter it. Every other engine of this shape offers a bit-width knob. This one has
-exactly two weight types and no knob at all:
-
-```c
+Ствол — это 108.81 ГБ bfloat16. Квантование в int8 уменьшило бы это вдвое, а в int4 — вчетверо. Любой другой движок такой формы предлагает ручку битности. У этого — ровно два типа весов и вообще никакой ручки:```c
 enum { K3_WF32 = 0, K3_WBF16 = 1 };
-```
+```Причина в том, что цена была измерена. Исследование сэмплировало 31 тензор внимания из релизного чекпоинта через HTTP range-запросы, по 384 строки каждый, квантовало с симметричным построчным масштабированием.
 
-The reason is that the cost was measured. The study sampled 31 attention tensors from the
-released checkpoint over HTTP range reads, 384 rows each, quantised with symmetric per-row
-scaling.
-
-![Symmetric per-row quantization, the method behind the int8 and int4 study](docs/images/eq_absmax.png)
-
-```text
+![Симметричное построчное квантование — метод, лежащий в основе исследования int8 и int4](docs/images/eq_absmax.png)```text
   type   tensor                      int8 mean  int4 mean    ratio
   ------------------------------------------------------------------
   KDA    L13.o_proj                    0.01188    0.21122    17.8x
@@ -3418,136 +2386,90 @@ scaling.
   MEAN over KDA-layer tensors          0.01046    0.18746    17.9x  (n=2)
   MEAN over MLA-layer tensors          0.00948    0.17154    18.1x  (n=18)
   MEAN over ALL sampled tensors        0.00961    0.17383    18.1x  (n=31)
-```
+```![Ни один тип слоя не переносит 4 бита сколь-нибудь лучше других](docs/images/quant_by_layer_type.png)
 
-![No layer type tolerates 4 bits any better than the others](docs/images/quant_by_layer_type.png)
+Int8 стоит около одного процента, а int4 — около семнадцати, соотношение 18, которое держится по каждому сэмплированному тензору. И среднее занижает ущерб, потому что хвост куда хуже.
 
-Int8 costs about one percent and int4 about seventeen, a ratio of 18 that holds across every
-tensor sampled. And the mean understates the damage, because the tail is much worse.
+![int8 стоит около 1%, int4 — около 17%, а его худшие строки стоят 65%](docs/images/quant_error.png)
 
-![int8 costs about 1%, int4 costs about 17%, and its worst rows cost 65%](docs/images/quant_error.png)
+Худшие отдельные строки при int4 достигают 45, 56 и **65 процентов** относительной ошибки. Это не артефакты округления.
 
-The worst individual rows at int4 reach 45 percent, 56 percent and **65 percent** relative
-error. Those are not rounding artefacts.
+Есть и сильный намёк от авторов модели. Технический отчёт говорит, что эксперты — это MXFP4 с quantisation-aware обучением, «пока все не-экспертные компоненты остаются в более высокой точности». Этот список не-экспертных компонентов — ровно этот ствол. Он сознательно не квантовался и никогда не обучался терпеть четыре бита.
 
-There is also a strong hint from the model authors. The technical report says the experts
-are MXFP4 with quantisation-aware training, "while all non-expert components remain in
-higher precision". That list of non-expert components is exactly this trunk. It was
-deliberately not quantised, and it was never trained to tolerate four bits.
+![Секунды выкупаются RAM-ом, а ошибка округления — нет, ни при каком бюджете](docs/images/eq_stream_vs_quantize.png)
 
-![Seconds are bought back with RAM, and rounding error is not, at any budget](docs/images/eq_stream_vs_quantize.png)
+Безпотерьный поток (lossless stream) стоит секунд на токен, и эти секунды возмещаются, дав движку больше RAM — ровно то, что показала лесенка памяти. Точность, потерянная из-за округления до четырёх бит, не возмещается ни при каком бюджете.
 
-A lossless stream costs seconds per token, and those seconds are recoverable by giving the
-engine more RAM, which is exactly what the memory ladder demonstrated. Accuracy lost to
-four-bit rounding is not recoverable at any budget.
+Четыре оговорки, каждая из которых исследование заявляет о себе само: это ошибка реконструкции весов, а не качество вывода; сэмплировалось 384 строки на тензор, а не целые тензоры; покрыты только проекции внимания, без MoE, без эмбеддингов и без выходной головы; и никакого сравнения логитов/токенов на int4 не прогонялось, так что цена качества ограничена, а не измерена.
 
-Four caveats, all of which the study states about itself: this is weight reconstruction
-error and not output quality; it sampled 384 rows per tensor rather than whole tensors; it
-covered attention projections only, with no MoE, no embeddings and no output head; and no
-downstream logit or token comparison was run at int4, so the quality cost is bounded rather
-than measured.
-
-Raw data: [`docs/data/trunk-quantisation.txt`](docs/data/trunk-quantisation.txt).
+Сырые данные: [`docs/data/trunk-quantisation.txt`](docs/data/trunk-quantisation.txt).
 
 ---
 
-# Part V: Reference
+# Часть V: Справочник
 
-## Scope
+## Область применения (Scope)
 
-- **Text-only XTML chat.** K3 system/user/assistant conversations and their reasoning
-  history are supported. Tools, vision/image parts, HTTP serving, and context compaction are
-  not yet supported.
-- **Batch remains greedy.** Its outputs remain identical across memory budgets. Chat alone
-  adds opt-in temperature/top-p sampling and `--greedy`.
-- **No chunked prefill.** The ceiling is 32,768 tokens, but a 21,000 token prompt is one
-  quadratic pass.
-- **Context is bounded by memory, not by the engine.**
+- **Только текст, чат XTML.** Диалоги K3 система/пользователь/ассистент и их история рассуждений поддерживаются. Инструменты, зрение/изображения, HTTP-сервер и сжатие контекста пока не поддерживаются.
+- **Пакетный режим остаётся жадным.** Его выводы остаются идентичными на любых бюджетах памяти. Только чат добавляет опциональные temperature/top-p и `--greedy`.
+- **Без чанкованного префилла.** Потолок — 32 768 токенов, но промпт на 21 000 токенов — это один квадратичный проход.
+- **Контекст ограничен памятью, а не движком.**
 
-![The advertised million-token context is a memory fact, not an engine limit](docs/images/eq_context_ceiling.png)
+![Заявленный контекст на миллион токенов — факт памяти, а не лимит движка](docs/images/eq_context_ceiling.png)
 
-- **No vision.** MoonViT-V2 is fully specified in `config.json` at 27 layers, and has zero
-  code here. That absent encoder is 0.057 percent of the checkpoint and downloadable on its
-  own, which makes implementing it a 0.9 GB job rather than a 1.56 TB one.
-- **No SIMD in the KDA recurrence.** The matmuls have AVX2 paths; the recurrence is still
-  scalar C.
-- **No quality benchmark.** No perplexity, no task eval. At 11 seconds per token that is
-  days of compute, and it would measure Kimi K3 rather than this engine.
+- **Без зрения.** MoonViT-V2 полностью специфицирован в `config.json` на 27 слоёв, но кода здесь ноль. Отсутствующий энкодер — это 0.057 процента чекпоинта и качается отдельно, что делает его реализацию задачей на 0.9 ГБ, а не на 1.56 ТБ.
+- **Без SIMD в рекуррентности KDA.** У matmul есть пути AVX2; рекуррентность — всё ещё скалярный C.
+- **Без бенчмарка качества.** Ни перплексии, ни оценок задач. При 11 секундах на токен это дни вычислений, и измерялась бы Kimi K3, а не этот движок.
 
-![What this engine does not implement, drawn to scale](docs/images/whats_missing.png)
+![Что этот движок не реализует — в масштабе](docs/images/whats_missing.png)
 
-What comes next, in priority order: [`ROADMAP.md`](docs/ROADMAP.md).
+Что дальше, в порядке приоритета: [`ROADMAP.md`](docs/ROADMAP.md).
 
-## Closing the ledger
+## Подведение итогов
 
-![From a 1.56 TB checkpoint to the right answer, on one machine](docs/images/recap.png)
+![От чекпоинта 1.56 ТБ до правильного ответа — на одной машине](docs/images/recap.png)
 
-Every parameter at bfloat16 is 5.56 TB. The experts already ship at 0.53125 bytes per
-weight, which takes it to 1.56 TB on disk. Routing means only 16 of 896 experts fire per
-layer, so 1.45 TB of that never needs to be in memory at all, leaving 113.49 GB. Streaming
-the trunk a layer at a time turns that last floor into a dial, and the dial goes down to a
-measured **8.24 GB**.
+Каждый параметр в bfloat16 — это 5.56 ТБ. Эксперты уже поставляются по 0.53125 байта на вес, что даёт 1.56 ТБ на диске. Маршрутизация означает, что лишь 16 из 896 экспертов срабатывают на слой, так что 1.45 ТБ из них вообще не обязаны быть в памяти, остаётся 113.49 ГБ. Потоковая подача ствола послойно превращает этот последний порог в регулятор, и регулятор опускается до измеренных **8.24 ГБ**.
 
-The point was never the speed. At 8 GB it takes about half a minute per token, and
-pretending otherwise would be silly. The point is that the model fits, that it produces the
-same tokens at 8 GB as it does at 224, and that the gap between "you need a datacentre" and
-"you need a desktop" was four decisions about where bytes live rather than any change to the
-model itself.
+Суть была не в скорости. На 8 ГБ токен занимает около полуминуты, и притворяться иначе было бы глупо. Суть в том, что модель помещается, что она выдаёт те же токены на 8 ГБ, что и на 224, и что разрыв между «нужен дата-центр» и «хватит десктопа» — это четыре решения о том, где живут байты, а не какое-либо изменение самой модели.
 
-## Documentation
+## Документация
 
 | | |
 |---|---|
-| [`QUICKSTART.md`](docs/QUICKSTART.md) | the setup above, condensed to commands |
-| [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) | how the model maps onto the code |
-| [`PERFORMANCE.md`](docs/PERFORMANCE.md) | the memory ladder, measured, with its noise floor |
-| [`TUNING.md`](docs/TUNING.md) | picking a budget and a split |
-| [`BENCHMARKING.md`](docs/BENCHMARKING.md) | measuring without fooling yourself |
-| [`TESTING.md`](docs/TESTING.md) | what each gate establishes |
-| [`API.md`](docs/API.md) | the C interface, for embedding the engine |
-| [`ROADMAP.md`](docs/ROADMAP.md) | scope, and what comes next |
-| [`docs/data/`](docs/data/) | measurement output; every figure above is transcribed from it |
-| [`docs/images/`](docs/images/) | every diagram and equation, with the mermaid and Python sources that generate them |
-| [`kimi-k3-tech-report.pdf`](docs/kimi-k3-tech-report.pdf) | the model's technical report |
+| [`QUICKSTART.md`](docs/QUICKSTART.md) | настройка выше, сжатая до команд |
+| [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) | как модель ложится на код |
+| [`PERFORMANCE.md`](docs/PERFORMANCE.md) | лесенка памяти, измеренная, с её шумовым порогом |
+| [`TUNING.md`](docs/TUNING.md) | выбор бюджета и разбиения |
+| [`BENCHMARKING.md`](docs/BENCHMARKING.md) | как измерять, не обманывая себя |
+| [`TESTING.md`](docs/TESTING.md) | что устанавливает каждый гейт |
+| [`API.md`](docs/API.md) | C-интерфейс для встраивания движка |
+| [`ROADMAP.md`](docs/ROADMAP.md) | область применения и что дальше |
+| [`docs/data/`](docs/data/) | вывод измерений; каждая цифра выше транскрибирована оттуда |
+| [`docs/images/`](docs/images/) | каждая диаграмма и уравнение, с исходниками mermaid и Python, которые их генерируют |
+| [`kimi-k3-tech-report.pdf`](docs/kimi-k3-tech-report.pdf) | технический отчёт модели |
 
-## Development
+## Разработка
 
 ```bash
 make test        # the gate that stays green, no weights, no network, no Python
 make help        # the documented targets
 make asan        # AddressSanitizer and UBSan
 make portable    # generic AVX2, without -march=native
-```
+```CI прогоняет те же гейты: матрицу GCC и Clang под `-Werror`, санитайзеры поверх парсеров и кэша, полный безвесовой набор и ruff со shellcheck как блокирующие проверки. Фикстуры генерируются из PyTorch-референса и коммитятся; [`tests/fixtures/README.md`](tests/fixtures/README.md) документирует, что делает каждую фикстуру «злой» и как её пересоздать. [`CONTRIBUTING.md`](CONTRIBUTING.md) — место, с которого стоит начать.
 
-CI runs the same gates: a GCC and Clang matrix under `-Werror`, sanitizers over the parsers
-and the cache, the full weightless suite, and ruff and shellcheck as blocking checks.
-Fixtures are generated from the PyTorch reference and committed;
-[`tests/fixtures/README.md`](tests/fixtures/README.md) records what makes each one
-adversarial and how to regenerate it. [`CONTRIBUTING.md`](CONTRIBUTING.md) is the place to
-start.
-
-## Star history
+## История звёзд
 
 <p align="center">
 <a href="https://www.star-history.com/#FareedKhan-dev/kimi-k3-in-c&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=FareedKhan-dev/kimi-k3-in-c&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=FareedKhan-dev/kimi-k3-in-c&type=Date" />
-   <img alt="Star history of FareedKhan-dev/kimi-k3-in-c" src="https://api.star-history.com/svg?repos=FareedKhan-dev/kimi-k3-in-c&type=Date" />
- </picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=FareedKhan-dev/kimi-k3-in-c&type=Date&theme=dark" />
+  <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=FareedKhan-dev/kimi-k3-in-c&type=Date" />
+  <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=FareedKhan-dev/kimi-k3-in-c&type=Date" />
+</picture>
 </a>
 </p>
 
-## License
+## Лицензия
 
-Apache 2.0, see [`LICENSE`](LICENSE). Vendored third-party components, and the
-modifications made to them, are declared in [`NOTICE`](NOTICE).
-
-Kimi K3 is created and released by Moonshot AI under its own license. This repository
-contains **no model weights** and grants no rights to them; the technical report is included
-for reference and remains the property of its authors.
-
-<div align="center">
-<br>
-<sub>Built for the proposition that a trillion-parameter model should not require a trillion-dollar rack.</sub>
-</div>
+Apache 2.0 — см. [LICENSE](LICENSE).

@@ -1,56 +1,49 @@
-# Quickstart
+# Быстрый старт
 
-From nothing to generated text.
+От нуля до сгенерированного текста.
 
-## 1. Check the machine
+## 1. Проверьте машину
 
 ```bash
 ./scripts/k3-doctor.sh
 ```
 
-Reports whether this machine can run the model, which preset fits its memory, and how
-fast its storage is. Storage matters more than you would expect, the engine moves
-~135 GB per token at small budgets.
+Сообщает, может ли эта машина запустить модель, какой пресет подходит её памяти и насколько быстро её хранилище. Хранилище важнее, чем вы ожидаете — движок перемещает ~135 ГБ на токен при малых бюджетах.
 
-## 2. Build
+## 2. Сборка
 
 ```bash
 make -j
 ```
 
-No dependencies beyond a C compiler and OpenMP. If `-march=native` is a problem (you are
-building for a different machine), use `make portable`.
+Никаких зависимостей кроме компилятора C и OpenMP. Если `-march=native` — проблема (вы собираете для другой машины), используйте `make portable`.
 
-## 3. Verify
+## 3. Проверка
 
 ```bash
 make test
 ```
 
-Seconds, and **no model weights required**. Op kernels, the streaming cache, the
-safetensors reader, the config reader, the tokenizer, and the end-to-end oracle gates.
+Секунды, и **веса модели не требуются**. Ядра операций, стриминговый кэш, читатель safetensors, читатель конфигурации, токенизатор и сквозные oracle-проверки.
 
-## 4. Get the weights
+## 4. Получите веса
 
 ```bash
-export HF_TOKEN=...            # a HuggingFace token with access to the model
+export HF_TOKEN=...            # токен HuggingFace с доступом к модели
 ./scripts/download-model.sh ~/k3model
 ```
 
-1.56 TB across 96 shards; roughly 30 minutes at 1 GB/s. The script verifies the byte
-total against the published figure afterwards, because a partial download does not fail
-loudly, it produces wrong tokens.
+1,56 ТБ в 96 шардах; примерно 30 минут при 1 ГБ/с. Скрипт затем сверяет суммарный объём байт с опубликованным значением, потому что частичная загрузка не падает громко — она выдаёт неверные токены.
 
-## 5. Pack the trunk
+## 5. Упакуйте trunk
 
 ```bash
 ./scripts/pack-trunk.sh ~/k3model ~/k3trunk
 ```
 
-A few minutes. This is what allows the trunk to stream, and therefore what makes the
-memory budget adjustable rather than fixed at ~115 GB.
+Несколько минут. Это то, что позволяет trunk стримиться и, следовательно, делает бюджет памяти регулируемым, а не фиксированным на ~115 ГБ.
 
-## 6. Run
+## 6. Запуск
 
 ```bash
 ./bin/k3 ~/k3model \
@@ -65,14 +58,13 @@ memory budget adjustable rather than fixed at ~115 GB.
 ----------------------
 ```
 
-## Where to go next
+## Куда дальше
 
-- [TUNING.md](TUNING.md), pick a budget and a split; one decision dominates
-- [PERFORMANCE.md](PERFORMANCE.md), the full memory ladder and its noise floor
-- `examples/`, runnable scripts, including one that proves output is identical across
-  memory budgets
+- [TUNING.md](TUNING.md) — выбор бюджета и разбиения; одно решение доминирует
+- [PERFORMANCE.md](PERFORMANCE.md) — полная лестница памяти и её уровень шума
+- `examples/` — запускаемые скрипты, включая тот, что доказывает идентичность вывода при разных бюджетах памяти
 
-For a text conversation rather than a raw continuation, use the official K3 XTML REPL:
+Для текстового диалога вместо сырого продолжения используйте официальный K3 XTML REPL:
 
 ```bash
 ./bin/k3 ~/k3model --trunk ~/k3trunk --preset desktop --tok ~/k3model \
@@ -80,20 +72,14 @@ For a text conversation rather than a raw continuation, use the official K3 XTML
   --history my-session.jsonl --incremental
 ```
 
-The JSONL transcript is portable but sensitive: it retains assistant `reasoning_content`
-as well as visible replies, because K3 needs that complete record for the next turn.
+JSONL-транскрипт переносим, но чувствителен: он сохраняет `reasoning_content` ассистента наряду с видимыми ответами, потому что K3 нужен полный протокол для следующего хода.
 
-## Troubleshooting
+## Устранение неполадок
 
-**"REFUSING: the KV cache for N positions needs X"**, the context you asked for does not
-fit. Shorten it, or drop `--incremental` (full recompute carries no KV cache, but is
-O(T²) in time).
+**«REFUSING: the KV cache for N positions needs X»** — запрошенный контекст не помещается. Сократите его или уберите `--incremental` (полное перевычисление не несёт KV-кэша, но квадратично по времени от T).
 
-**Very slow with a long prompt**, expected. Prefill is not chunked and MLA attention is
-quadratic in sequence length. See [ROADMAP.md](ROADMAP.md).
+**Очень медленно с длинным промптом** — ожидаемо. Prefill не разбит на чанки, и MLA-внимание квадратично от длины последовательности. См. [ROADMAP.md](ROADMAP.md).
 
-**"config could not be read with confidence"**, the reader found a config it does not
-fully understand and refused rather than guessing. The message lists every missing field.
+**«config could not be read with confidence»** — загрузчик нашёл конфигурацию, которую не полностью понимает, и отказался гадать. Сообщение перечисляет каждое отсутствующее поле.
 
-**Output is a continuation, not an answer**, use `--chat`; ordinary `--prompt` deliberately
-keeps raw-completion behavior for compatibility.
+**Вывод — продолжение, а не ответ** — используйте `--chat`; обычный `--prompt` намеренно сохраняет поведение сырого продолжения для совместимости.

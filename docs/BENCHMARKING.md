@@ -1,66 +1,55 @@
-# Benchmarking
+# Бенчмаркинг
 
-## The one rule
+## Единственное правило
 
-**The measured run-to-run spread on an identical configuration is 33%.** Three runs of
-the same binary, same prompt, same flags, in the same minute:
+**Измеренный разброс от прогона к прогону на идентичной конфигурации составляет 33%.** Три прогона одного и того же бинарника, одного промпта, одних флагов, в одну и ту же минуту:
 
-| run | s/token |
+| прогон | с/токен |
 |---:|---:|
-| 1 | 14.78 |
-| 2 | 14.67 |
-| 3 | 20.14 |
+| 1 | 14,78 |
+| 2 | 14,67 |
+| 3 | 20,14 |
 
-mean 16.53, sd 3.13, spread 33.1%.
+среднее 16,53, ст. откл. 3,13, разброс 33,1%.
 
-If your A/B differs by less than that, you have measured nothing. This is not a caution
-in the abstract: on this project, replication was run *last*, and it retracted results
-that had already been written down and reasoned about.
+Если ваша A/B-разница меньше этого, вы ничего не измерили. Это не абстрактное предостережение: в этом проекте репликация была запущена *последней*, и она опровергла результаты, которые уже были записаны и проанализированы.
 
-## Procedure
+## Процедура
 
 ```bash
-# 3 runs per arm, minimum.
+# Минимум 3 прогона на вариант.
 for r in 1 2 3; do
   ./bin/k3 $MODEL --trunk $TRUNK --preset server --ids 1008,10484,318,15383,387 \
            --gen 8 --incremental --out /tmp/arm_a_$r.json | grep 's/token average'
 done
 ```
 
-Then report every run, not the best one:
+Затем сообщайте каждый прогон, а не лучший:
 
-| arm | run 1 | run 2 | run 3 | mean |
+| вариант | прогон 1 | прогон 2 | прогон 3 | среднее |
 |---|---|---|---|---|
 
-## Things that will contaminate a measurement
+## Что загрязнит измерение
 
-Each of these was observed on this project.
+Каждое из этих явлений наблюдалось в этом проекте.
 
-- **Background updates.** `unattended-upgrades` was consuming ~63% of a core during one
-  run. Stop it: `sudo systemctl stop unattended-upgrades apt-daily.timer`.
-- **Two engines at once.** A kill that takes the wrapper but not the child leaves both
-  competing for disk and CPU. Check `pgrep -x k3` before starting.
-- **Cold vs warm page cache.** A repeat run reads a warm cache. Either drop caches
-  between runs (`echo 3 | sudo tee /proc/sys/vm/drop_caches`) or state that you did not.
-- **Cold start.** Token 0 pays the full trunk-pinning cost. An 8-token run is dominated
-  by it; a 64-token run is not. Never compare runs of different lengths.
-- **Different storage.** This workload moves ~135 GB per token, so device bandwidth
-  dominates. Comparing two runs from different disks compares the disks.
+- **Фоновые обновления.** `unattended-upgrades` потреблял ~63% ядра во время одного прогона. Остановите его: `sudo systemctl stop unattended-upgrades apt-daily.timer`.
+- **Два движка одновременно.** Kill, который убивает обёртку, но не дочерний процесс, оставляет оба конкурирующими за диск и CPU. Проверьте `pgrep -x k3` перед стартом.
+- **Холодный vs тёплый кэш страниц.** Повторный прогон читает тёплый кэш. Либо сбрасывайте кэши между прогонами (`echo 3 | sudo tee /proc/sys/vm/drop_caches`), либо укажите, что вы этого не делали.
+- **Холодный старт.** Токен 0 оплачивает полную стоимость закрепления trunk. 8-токенный прогон ею доминируется; 64-токенный — нет. Никогда не сравнивайте прогоны разной длины.
+- **Разное хранилище.** Эта нагрузка перемещает ~135 ГБ на токен, поэтому пропускная способность устройства доминирует. Сравнение двух прогонов с разных дисков — это сравнение дисков.
 
-## What to measure instead of wall clock
+## Что измерять вместо wall clock
 
-Timing is the noisiest thing the engine reports. These are counts, and they do not move:
+Время — самая шумная метрика, которую сообщает движок. Это — счётчики, и они не дрейфуют:
 
-- `GB read/token`, bytes actually pulled from disk
-- `requests` / `evictions`, cache retention, derived as `1 - evictions/requests`
-- `pinned N/93 layers`, how much trunk is resident
-- generated token ids, for correctness, exact
+- `GB read/token` — байты, фактически считанные с диска
+- `requests` / `evictions` — удержание кэша, вычисляется как `1 - evictions/requests`
+- `pinned N/93 layers` — какая часть trunk резидентна
+- сгенерированные id токенов — для корректности, точные
 
-If a change is supposed to reduce I/O, **measure the bytes**. It is a far stronger claim
-than a second-count and it needs no replication.
+Если изменение должно снизить I/O, **измеряйте байты**. Это гораздо более сильное утверждение, чем секунды, и оно не требует репликации.
 
-## Reporting
+## Отчётность
 
-`docs/PERFORMANCE.md` is the template: state the machine, state the noise floor, mark
-single-sample rows as single-sample, and separate what survives the floor from what does
-not.
+`docs/PERFORMANCE.md` — шаблон: укажите машину, укажите уровень шума, пометьте строки с единичной выборкой как таковые и отделите то, что переживает уровень шума, от того, что нет.

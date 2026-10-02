@@ -51,11 +51,11 @@ int k3_state_peek(const char *path, K3StateHdr *hd)
     const size_t got = fread(hd, 1, sizeof *hd, f);
     fclose(f);
     if (got != sizeof *hd || memcmp(hd->magic, K3_STATE_MAGIC, 4) != 0) {
-        fprintf(stderr, "%s is not a k3 state file\n", path);
+        fprintf(stderr, "%s не является файлом состояния k3\n", path);
         return -1;
     }
     if (hd->version != K3_STATE_VER) {
-        fprintf(stderr, "%s is state version %d, this build writes %d\n",
+        fprintf(stderr, "%s имеет версию состояния %d, эта сборка пишет %d\n",
                 path, hd->version, K3_STATE_VER);
         return -1;
     }
@@ -77,18 +77,18 @@ int k3_state_load(const char *path, const K3Cfg *c, const K3StateHdr *hd,
     int32_t fp[12];
     k3_state_fp(c, fp);
     if (memcmp(fp, hd->fp, sizeof fp) != 0) {
-        fprintf(stderr, "REFUSING: %s was written by a different model architecture.\n"
+        fprintf(stderr, "ОТКАЗ: %s записан другой архитектурой модели.\n"
                         "  Restoring it would produce fluent, wrong output.\n", path);
         return -1;
     }
     if (hd->n_bound != n_bound || hd->n_mla != n_mla) {
-        fprintf(stderr, "REFUSING: %s holds %d bound layers and %d MLA layers, "
+        fprintf(stderr, "ОТКАЗ: %s содержит %d привязанных слоёв и %d MLA-слоёв, "
                         "this run has %d and %d\n",
                 path, hd->n_bound, hd->n_mla, n_bound, n_mla);
         return -1;
     }
     if (hd->cached > kv_cap) {
-        fprintf(stderr, "REFUSING: %s holds %d positions, this run's KV cache is %d.\n"
+        fprintf(stderr, "ОТКАЗ: %s содержит %d позиций, KV-кэш этого прогона — %d.\n"
                         "  Raise --gen or shorten the prompt.\n", path, hd->cached, kv_cap);
         return -1;
     }
@@ -114,12 +114,12 @@ int k3_state_load(const char *path, const K3Cfg *c, const K3StateHdr *hd,
         if (hread(dst, sizeof(float), n, f, &h) != n) rc = -1;
     }
     fclose(f);
-    if (rc) { fprintf(stderr, "%s is truncated\n", path); return rc; }
+    if (rc) { fprintf(stderr, "%s усечён\n", path); return rc; }
     /* Every read came back full, so the file has the right SHAPE. This is the check
      * that sees a wrong BYTE: a flipped bit in a recurrent matrix restores cleanly and
      * decodes fluently, and nothing after this point can tell. */
     if (h != hd->payload_hash) {
-        fprintf(stderr, "REFUSING: %s does not hash to what its header says\n"
+        fprintf(stderr, "ОТКАЗ: %s не совпадает с хешем, заявленным в заголовке\n"
                         "  (header %016llx, contents %016llx). The payload is damaged;\n"
                         "  restoring it would produce fluent, wrong output.\n",
                 path, (unsigned long long)hd->payload_hash, (unsigned long long)h);
@@ -148,12 +148,12 @@ int k3_state_save(const char *path, const K3Cfg *c, const int *seq, int nseq,
      * changes exactly once, from the old complete file to the new complete file. */
     char tmp[4096];
     if (snprintf(tmp, sizeof tmp, "%s.tmp.XXXXXX", path) >= (int)sizeof tmp) {
-        fprintf(stderr, "%s: path too long\n", path);
+        fprintf(stderr, "%s: путь слишком длинный\n", path);
         return -1;
     }
     const int fd = mkstemp(tmp);
     if (fd < 0) {
-        fprintf(stderr, "cannot stage %s next to %s: %s\n", tmp, path, strerror(errno));
+        fprintf(stderr, "не могу stage %s рядом с %s: %s\n", tmp, path, strerror(errno));
         return -1;
     }
 #ifndef _WIN32
@@ -164,7 +164,7 @@ int k3_state_save(const char *path, const K3Cfg *c, const int *seq, int nseq,
         const mode_t um = umask(0);
         umask(um);
         if (fchmod(fd, 0666 & ~um) != 0) {
-            fprintf(stderr, "cannot set the mode of %s: %s\n", tmp, strerror(errno));
+            fprintf(stderr, "не могу установить режим %s: %s\n", tmp, strerror(errno));
             close(fd); unlink(tmp);
             return -1;
         }
@@ -209,7 +209,7 @@ int k3_state_save(const char *path, const K3Cfg *c, const int *seq, int nseq,
     if (fclose(f) != 0) rc = -1;
     if (!rc && rename(tmp, path) != 0) rc = -1;
     if (rc) {
-        fprintf(stderr, "failed writing %s: %s\n", path, strerror(errno));
+        fprintf(stderr, "ошибка записи %s: %s\n", path, strerror(errno));
         unlink(tmp);
     }
     return rc;

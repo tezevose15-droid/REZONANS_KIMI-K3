@@ -1,59 +1,42 @@
-# Documentation
+# Документация
 
-## Start here
-
-| | |
-|---|---|
-| [QUICKSTART.md](QUICKSTART.md) | from nothing to generated text |
-| [TUNING.md](TUNING.md) | choosing a memory budget, one decision dominates |
-
-## Reference
+## Начните отсюда
 
 | | |
 |---|---|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | how the model maps onto the code |
-| [API.md](API.md) | the C interface, for embedding the engine |
-| [PERFORMANCE.md](PERFORMANCE.md) | the memory ladder, measured, with its noise floor |
-| [TESTING.md](TESTING.md) | what each gate proves |
-| [BENCHMARKING.md](BENCHMARKING.md) | how to measure without fooling yourself |
-| [ROADMAP.md](ROADMAP.md) | what is missing, in priority order |
-| [data/](data/) | the raw measurement output every table is transcribed from |
+| [QUICKSTART.md](QUICKSTART.md) | от нуля до сгенерированного текста |
+| [TUNING.md](TUNING.md) | выбор бюджета памяти, одно решение доминирует |
 
-Text-only official XTML chat is documented in the main [README](../README.md#text-chat-official-kimi-k3-xtml).
-It remains CPU- and disk-bound and uses the same streamed trunk and expert-cache budgets as
-batch generation.
-
-## Upstream material
+## Справочник
 
 | | |
 |---|---|
-| [kimi-k3-tech-report.pdf](kimi-k3-tech-report.pdf) | the model's technical report, as published |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | как модель отображается на код |
+| [API.md](API.md) | C-интерфейс для встраивания движка |
+| [PERFORMANCE.md](PERFORMANCE.md) | лестница памяти, измеренная, с уровнем шума |
+| [TESTING.md](TESTING.md) | что доказывает каждая проверка |
+| [BENCHMARKING.md](BENCHMARKING.md) | как измерять, не обманывая себя |
+| [ROADMAP.md](ROADMAP.md) | чего не хватает, в порядке приоритета |
+| [data/](data/) | сырые выводы измерений, откуда переписана каждая таблица |
 
-Reproduced for reference; it remains the property of its authors. Every architectural
-claim in [ARCHITECTURE.md](ARCHITECTURE.md) cites the section of this report it comes
-from, so the two can be checked against each other.
+Текстовый официальный XTML-чат документирован в основном [README](../README.md#text-chat-official-kimi-k3-xtml). Он остаётся ограниченным CPU и диском и использует те же бюджеты стриминга trunk и кэша экспертов, что и пакетная генерация.
 
-## The three claims worth checking first
+## Внешние материалы
 
-If you are evaluating whether this project is worth your time, these are the load-bearing
-claims and where each is substantiated:
+| | |
+|---|---|
+| [kimi-k3-tech-report.pdf](kimi-k3-tech-report.pdf) | технический отчёт модели, как опубликован |
 
-1. **A 2.78T-parameter model runs in 8 GB of RAM.**
-   [PERFORMANCE.md](PERFORMANCE.md), twelve budgets, measured peak RSS at each.
-   Raw: [data/memory-ladder.tsv](data/memory-ladder.tsv).
+Воспроизведён для справки; остаётся собственностью авторов. Каждое архитектурное утверждение в [ARCHITECTURE.md](ARCHITECTURE.md) ссылается на раздел этого отчёта, откуда оно взято, чтобы их можно было сверить.
 
-2. **Output is byte-identical across memory budgets.** Memory buys speed, not
-   capability. [PERFORMANCE.md](PERFORMANCE.md), and `examples/02-memory-budgets.sh`
-   reproduces it in three runs. The `ids` column of
-   [data/memory-ladder.tsv](data/memory-ladder.tsv) is the claim in raw form: twelve
-   rows, one identical token sequence.
+## Три утверждения, которые стоит проверить первыми
 
-3. **The engine matches a reference implementation exactly.** Teacher forcing, greedy
-   decode, and incremental decode, on a model with the released tensor graph.
-   [TESTING.md](TESTING.md); `make test` runs it in seconds with no weights.
+Если вы оцениваете, стоит ли проект вашего времени, это опорные утверждения и где каждое подкреплено:
 
-Claims about *speed* carry a caveat that [PERFORMANCE.md](PERFORMANCE.md) states up
-front: run-to-run variance on identical configurations is 33%
-([data/replication.tsv](data/replication.tsv)), so single-sample differences below that
-are not effects. Claims about *output* carry no such caveat, those are exact, and they
-are counts rather than stopwatch readings.
+1. **Модель с 2,78T параметров запускается в 8 ГБ RAM.** [PERFORMANCE.md](PERFORMANCE.md), двенадцать бюджетов, измеренный пик RSS на каждом. Сырые данные: [data/memory-ladder.tsv](data/memory-ladder.tsv).
+
+2. **Вывод побайтово идентичен при разных бюджетах памяти.** Память покупает скорость, а не возможности. [PERFORMANCE.md](PERFORMANCE.md) и `examples/02-memory-budgets.sh` воспроизводит это за три прогона. Столбец `ids` в [data/memory-ladder.tsv](data/memory-ladder.tsv) — утверждение в сыром виде: двенадцать строк, одна идентичная последовательность токенов.
+
+3. **Движок точно совпадает с эталонной реализацией.** Teacher forcing, жадный декодинг и инкрементальный декодинг на модели с выпущенным графом тензоров. [TESTING.md](TESTING.md); `make test` прогоняет это за секунды без весов.
+
+Утверждения о *скорости* несут оговорку, которую [PERFORMANCE.md](PERFORMANCE.md) заявляет прямо: разброс от прогона к прогону на идентичных конфигурациях — 33% ([data/replication.tsv](data/replication.tsv)), поэтому единичные различия ниже этого — не эффекты. Утверждения о *выводе* такой оговорки не несут — они точны, и это счётчики, а не показания секундомера.

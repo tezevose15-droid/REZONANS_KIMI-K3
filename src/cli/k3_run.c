@@ -132,7 +132,7 @@ static int real_cfg(K3Cfg *c, int *fa, int fa_max,
     if (cfg_path) return k3_cfg_load_file(c, fa, fa_max, cfg_path);
 
     real_cfg_hardcoded(c, fa);
-    printf("config: NO config.json found under %s\n"
+    printf("конфиг: config.json не найден в %s\n"
            "        falling back to the built-in Kimi K3 constants (93 layers, 24 MLA).\n"
            "        These match the released checkpoint but are NOT read from it; pass\n"
            "        --config PATH to validate against the real file.\n", shard_dir);
@@ -256,91 +256,91 @@ static int k3_physical_cores(void)
 static void usage(FILE *f)
 {
     fprintf(f,
-"k3 " K3_VERSION ", Kimi K3 inference engine\n"
+"k3 " K3_VERSION ", движок инференса Kimi K3\n"
 "\n"
-"usage: k3 <model_dir> [options]\n"
+"использование: k3 <model_dir> [опции]\n"
 "\n"
-"prompt (exactly one):\n"
-"  --prompt TEXT         tokenize TEXT and run it\n"
-"  --prompt-file PATH    read the prompt from a file; use this for non-ASCII, since\n"
-"                        argv is re-encoded by the shell\n"
-"  --ids 1,2,3           raw token ids; the reproducible channel used by the tests\n"
+"промпт (ровно один):\n"
+"  --prompt TEXT         токенизировать TEXT и запустить\n"
+"  --prompt-file PATH    прочитать промпт из файла; используйте для не-ASCII, т.к.\n"
+"                        argv перекодируется shell'ом\n"
+"  --ids 1,2,3           сырые id токенов; воспроизводимый канал для тестов\n"
 "\n"
-"memory:\n"
+"память:\n"
 "  --preset NAME         auto | ultra | laptop | desktop | workstation | server | max\n"
-"                        auto sizes both budgets from this machine's free RAM,\n"
-"                        trunk-first; also spelled --trunk-gb auto\n"
-"  --list-presets        show each preset's split and expected speed\n"
-"  --trunk DIR           packed trunk directory; enables streaming (see scripts/)\n"
-"  --trunk-gb X          trunk ring / pinned-layer budget\n"
-"  --trunk-ring N        streaming ring slots (default 2). One slot is the layer being\n"
-"                        computed on, the rest are reads in flight. A third slot lets\n"
-"                        the reader run a layer further ahead and costs one more slot\n"
-"                        of RAM; the budget still wins if it does not fit\n"
-"  --cache-gb X          routed-expert cache budget\n"
-"  --threads N           OpenMP threads. Default is the physical core count, not the\n"
-"                        logical cpu count OpenMP would otherwise pick: on an SMT part\n"
-"                        the extra threads migrate across cores and cost more than they\n"
-"                        add. OMP_NUM_THREADS, if set, still wins\n"
-"  --ultra-low-memory    stream embedding rows and lm_head chunks, and reuse one\n"
-"                        recurrent-state slot during full recompute; needs --trunk\n"
+"                        auto подбирает оба бюджета из свободной RAM этой машины,\n"
+"                        trunk-first; также пишется как --trunk-gb auto\n"
+"  --list-presets        показать разбиение каждого пресета и ожидаемую скорость\n"
+"  --trunk DIR           каталог упакованного trunk; включает стриминг (см. scripts/)\n"
+"  --trunk-gb X          бюджет кольца trunk / закреплённых слоёв\n"
+"  --trunk-ring N        слоты стримингового кольца (по умолчанию 2). Один слот — слой,\n"
+"                        над которым идёт вычисление, остальные — чтения в полёте. Третий слот\n"
+"                        позволяет читателю убежать на слой вперёд и стоит ещё один слот\n"
+"                        RAM; бюджет всё равно выигрывает, если не помещается\n"
+"  --cache-gb X          бюджет кэша маршрутизируемых экспертов\n"
+"  --threads N           потоки OpenMP. По умолчанию — число физических ядер, а не\n"
+"                        число логических CPU, которое иначе выбрал бы OpenMP: на SMT-части\n"
+"                        лишние потоки мигрируют между ядрами и стоят дороже, чем\n"
+"                        дают. OMP_NUM_THREADS, если задана, по-прежнему приоритетнее\n"
+"  --ultra-low-memory    стримить строки embedding и чанки lm_head и повторно\n"
+"                        использовать один слот рекуррентного состояния при полном перевычислении; нужен --trunk\n"
 "\n"
-"generation:\n"
-"  --gen N               tokens to generate (default 8)\n"
-"  --stop-id N           halt after emitting token id N (repeatable, up to 8). The\n"
-"                        stop id is kept in the sequence, so --save-state and a later\n"
-"                        --load-state continue from what was actually produced.\n"
-"                        Off by default: without it --gen N means exactly N tokens,\n"
-"                        which the benchmarks and oracle gates rely on. Note the\n"
-"                        released checkpoint declares TWO end ids that disagree:\n"
-"                        config.json says 163586 (<|end_of_msg|>), tokenizer_config\n"
-"                        .json says 163585 ([EOS]), and the model emits 163585.\n"
-"                        Pass both to stop on either\n"
-"  --incremental         carry KV cache and recurrent state between tokens\n"
-"  --save-state PATH     write the carried state after the run, so the next turn of a\n"
-"                        conversation resumes instead of re-reading the whole prompt\n"
-"  --load-state PATH     resume from a saved state; the prompt given now is treated as\n"
-"                        the CONTINUATION of the saved sequence. Needs --incremental\n"
-"  --draft-trunk DIR     hybrid decode: a second packed trunk (typically a quantized\n"
-"                        derivation of the real one, see tools/qdq_trunk.py) DRAFTS\n"
-"                        tokens which the exact model verifies in batched sweeps.\n"
-"                        Output remains exactly the exact model's greedy decode; the\n"
-"                        draft only proposes. Needs --incremental; implies --spec 4\n"
-"  --draft-trunk-gb X    trunk budget for the draft model (default 6)\n"
-"  --spec N              speculative decode: draft up to N tokens by n-gram lookup and\n"
-"                        verify them in ONE batched sweep. Output is identical to\n"
-"                        serial decode by construction; needs --incremental. An extra\n"
-"                        verified position costs ~22%% of a serial token when the trunk\n"
-"                        streams, so repetitive text decodes up to several times faster\n"
-"  --tok DIR             directory with tiktoken.model and tokenizer_config.json\n"
+"генерация:\n"
+"  --gen N               токенов для генерации (по умолчанию 8)\n"
+"  --stop-id N           остановка после эмита id токена N (повторяемо, до 8).\n"
+"                        Stop id остаётся в последовательности, поэтому --save-state и последующий\n"
+"                        --load-state продолжают с того, что реально породила модель.\n"
+"                        По умолчанию выкл.: без него --gen N означает ровно N токенов,\n"
+"                        на что полагаются бенчмарки и oracle-проверки. Заметьте, выпущенный\n"
+"                        чекпоинт объявляет ДВА end id, которые расходятся:\n"
+"                        config.json говорит 163586 (<|end_of_msg|>), tokenizer_config\n"
+"                        .json говорит 163585 ([EOS]), а модель выдаёт 163585.\n"
+"                        Передайте оба, чтобы остановиться на любом\n"
+"  --incremental         переносить KV-кэш и рекуррентное состояние между токенами\n"
+"  --save-state PATH     записать переносимое состояние после прогона, чтобы следующий ход\n"
+"                        диалога возобновился вместо перечитывания всего промпта\n"
+"  --load-state PATH     возобновить из сохранённого состояния; данный сейчас промпт считается\n"
+"                        ПРОДОЛЖЕНИЕМ сохранённой последовательности. Нужен --incremental\n"
+"  --draft-trunk DIR     гибридный декодинг: второй упакованный trunk (обычно квантованный\n"
+"                        производный от настоящего, см. tools/qdq_trunk.py) ПРЕДЛАГАЕТ\n"
+"                        токены, которые точная модель верифицирует пакетными прогонами.\n"
+"                        Вывод остаётся точно жадным декодингом точной модели;\n"
+"                        драфт лишь предлагает. Нужен --incremental; подразумевает --spec 4\n"
+"  --draft-trunk-gb X    бюджет trunk для драфт-модели (по умолчанию 6)\n"
+"  --spec N              спекулятивный декодинг: предложить до N токенов n-граммным поиском и\n"
+"                        верифицировать их ЗА ОДИН пакетный прогон. Вывод идентичен\n"
+"                        последовательному декодингу по построению; нужен --incremental. Дополнительная\n"
+"                        верифицированная позиция стоит ~22%% от последовательного токена, когда trunk\n"
+"                        стримится, поэтому повторяющийся текст декодируется в разы быстрее\n"
+"  --tok DIR             каталог с tiktoken.model и tokenizer_config.json\n"
 "\n"
-"chat (text-only Kimi K3 XTML):\n"
-"  --chat                terminal REPL; uses the official XTML template. With\n"
-"                        --incremental each turn prefills only what the previous\n"
-"                        turn did not already feed the model\n"
-"  --system TEXT         initial system message (stored in --history)\n"
-"  --history PATH        portable JSONL transcript; rebuilt on restart\n"
-"  --temperature X       turn chat sampling on, at this temperature (default: greedy)\n"
-"  --top-p P             nucleus probability for chat sampling (default 0.95)\n"
-"  --top-k K             only the K most probable tokens stay eligible (default: off)\n"
-"  --seed N              chat sampling seed; any of these four turns sampling on\n"
-"  --greedy              force argmax even when a sampling flag was given\n"
-"  --no-think            answer in the response channel directly: no think channel and\n"
-"                        no thinking-effort message (the encoder's thinking=False)\n"
-"  --thinking-effort E   low, high or max (default max, as the checkpoint's tokenizer sets)\n"
+"чат (только текст, Kimi K3 XTML):\n"
+"  --chat                терминальный REPL; использует официальный XTML-шаблон. С\n"
+"                        --incremental каждый ход делает prefill только того, что\n"
+"                        предыдущий ход ещё не скормил модели\n"
+"  --system TEXT         начальное системное сообщение (хранится в --history)\n"
+"  --history PATH        переносимый JSONL-транскрипт; пересобирается при рестарте\n"
+"  --temperature X       включить выборку чата при этой температуре (по умолчанию жадно)\n"
+"  --top-p P             вероятность nucleus для выборки чата (по умолчанию 0.95)\n"
+"  --top-k K             только K наиболее вероятных токенов остаются кандидатами (по умолчанию выкл.)\n"
+"  --seed N              seed выборки чата; любой из этих четырёх включает выборку\n"
+"  --greedy              форсировать argmax, даже если задан флаг выборки\n"
+"  --no-think            отвечать напрямую в канале ответа: без канала размышления и\n"
+"                        без сообщения thinking-effort (thinking=False у энкодера)\n"
+"  --thinking-effort E   low, high или max (по умолчанию max, как задаёт токенизатор чекпоинта)\n"
 "\n"
-"diagnostics:\n"
-"  --config PATH         model config; defaults to <model_dir>/config.json\n"
-"  --layers N            bind only the first N layers (partial shard sets)\n"
-"  --dump-logits PATH    write float32 logits for the first step\n"
-"  --dump-cache-trace D  write expert_hist.json and expert_trace.bin into D, for\n"
-"                        offline analysis with tools/sim_cache.py\n"
-"  --out FILE            JSON results (default k3_run.json)\n"
+"диагностика:\n"
+"  --config PATH         конфиг модели; по умолчанию <model_dir>/config.json\n"
+"  --layers N            привязать только первые N слоёв (частичные наборы шардов)\n"
+"  --dump-logits PATH    записать float32-логиты для первого шага\n"
+"  --dump-cache-trace D  записать expert_hist.json и expert_trace.bin в D для\n"
+"                        оффлайн-анализа через tools/sim_cache.py\n"
+"  --out FILE            JSON-результаты (по умолчанию k3_run.json)\n"
 "  --version, --help\n"
 "\n"
-"Memory is a dial, not a floor: the same model runs in 8 GB and in 224 GB and produces\n"
-"identical output. Give memory to the trunk before the expert cache, see\n"
-"docs/TUNING.md for why, and scripts/k3-doctor.sh to size this machine.\n");
+"Память — регулятор, а не нижняя граница: та же модель работает в 8 ГБ и в 224 ГБ и выдаёт\n"
+"идентичный вывод. Отдавайте память trunk раньше кэша экспертов, см.\n"
+"docs/TUNING.md почему, и scripts/k3-doctor.sh для оценки этой машины.\n");
 }
 
 /* ------------------------------------------------------------------- presets ----
@@ -391,14 +391,14 @@ static const K3Preset *k3_preset_find(const char *name)
 
 static void k3_preset_list(FILE *f)
 {
-    fprintf(f, "presets (trunk / expert-cache, in GB):\n");
+    fprintf(f, "пресеты (trunk / кэш экспертов, в ГБ):\n");
     for (int i = 0; i < K3_NPRESET; i++)
         fprintf(f, "  %-12s %6.2f / %-6.2f  %s\n", K3_PRESETS[i].name,
                 K3_PRESETS[i].trunk_gb, K3_PRESETS[i].cache_gb, K3_PRESETS[i].note);
     fprintf(f, "  %-12s %6s / %-6s  %s\n", "auto", "fit", "fit",
-            "sizes both from this machine's free RAM, trunk-first. Recommended.");
-    fprintf(f, "\nAll presets stream the trunk, so they need --trunk <packed_dir>.\n"
-               "Run scripts/k3-doctor.sh to see which one this machine fits.\n");
+            "подбирает оба из свободной RAM этой машины, trunk-first. Рекомендуется.");
+    fprintf(f, "\nВсе пресеты стримят trunk, поэтому им нужен --trunk <packed_dir>.\n"
+               "Запустите scripts/k3-doctor.sh, чтобы узнать, какой подходит этой машине.\n");
 }
 
 /* PEAK resident set, in bytes. ru_maxrss is kilobytes on Linux and BYTES on Darwin, so
@@ -467,7 +467,7 @@ static int forward(Weights *w, const K3Cfg *c, K3Cache *cache, const int *ids, i
     for (int t = 0; t < T; t++) {
         if (w->ultra) {
             if (k3_model_stream_embed_row(&w->ms, h + (size_t)t * E, ids[t]) != 0) {
-                fprintf(stderr, "embedding row load failed for token %d at position %d\n",
+                fprintf(stderr, "загрузка строки embedding для токена %d на позиции %d не удалась\n",
                         ids[t], t);
                 return -1;
             }
@@ -492,7 +492,7 @@ static int forward(Weights *w, const K3Cfg *c, K3Cache *cache, const int *ids, i
          * never wrong. */
         if (w->trunk) {
             if (k3_trunk_bind(w->trunk, c, L, &w->lay[L]) != 0) {
-                fprintf(stderr, "trunk bind failed at layer %d\n", L);
+                fprintf(stderr, "привязка trunk на слое %d не удалась\n", L);
                 return -1;
             }
             k3_trunk_prefetch(w->trunk, L + 1);
@@ -530,7 +530,7 @@ static int forward(Weights *w, const K3Cfg *c, K3Cache *cache, const int *ids, i
                                  NULL, NULL, 0, 0);
         }
         if (k3_expert_drops != drops_before) {
-            fprintf(stderr, "routed expert load failed at layer %d; refusing partial "
+            fprintf(stderr, "загрузка маршрутизируемого эксперта на слое %d не удалась; отказ от частичной "
                             "MoE output\n", L);
             return -1;
         }
@@ -587,7 +587,7 @@ static int forward(Weights *w, const K3Cfg *c, K3Cache *cache, const int *ids, i
 static int chat_read_line(char **out)
 {
     char *line = NULL; size_t cap = 0;
-    printf("user> "); fflush(stdout);
+    printf("пользователь> "); fflush(stdout);
     if (getline(&line, &cap, stdin) < 0) { free(line); return 0; }
     size_t n = strlen(line);
     while (n && (line[n - 1] == '\n' || line[n - 1] == '\r')) line[--n] = 0;
@@ -602,13 +602,13 @@ static int chat_render_ids(Tok *tok, const K3ChatHistory *history, const K3ChatO
     /* One sentinel slot distinguishes a prompt exactly at the engine limit from one
      * that the tokenizer would otherwise silently truncate. */
     int *ids = (int *)malloc((size_t)(K3_MAX_PROMPT + 1) * sizeof(*ids));
-    if (!ids) { k3_chat_segments_free(&segs); snprintf(err, err_n, "OOM allocating chat prompt"); return -1; }
+    if (!ids) { k3_chat_segments_free(&segs); snprintf(err, err_n, "OOM при выделении промпта чата"); return -1; }
     int n = k3_chat_encode(tok, &segs, ids, K3_MAX_PROMPT + 1, err, err_n);
     k3_chat_segments_free(&segs);
     if (n <= 0 || n > K3_MAX_PROMPT) {
         free(ids);
-        if (n == 0) snprintf(err, err_n, "rendered chat prompt has no tokens");
-        else if (n > K3_MAX_PROMPT) snprintf(err, err_n, "rendered chat prompt exceeds the %d-token engine context limit", K3_MAX_PROMPT);
+        if (n == 0) snprintf(err, err_n, "отрендеренный промпт чата не содержит токенов");
+        else if (n > K3_MAX_PROMPT) snprintf(err, err_n, "отрендеренный промпт чата превышает лимит контекста движка %d токенов", K3_MAX_PROMPT);
         return -1;
     }
     *ids_out = ids; *n_out = n; return 0;
@@ -637,7 +637,7 @@ static int chat_resize(int want, int *tmax, int nl, int maxb, size_t kper,
     }
     if (!nh || !nb || !ns || !nq || (w->kvc && (!nk || !nr))) {
         free(nh); free(nb); free(ns); free(nq); free(nk); free(nr);
-        fprintf(stderr, "chat: buffer allocation failed for %d positions\n", want); return -1;
+        fprintf(stderr, "чат: не удалось выделить буфер для %d позиций\n", want); return -1;
     }
     free(*h); free(*br); free(*sc); free(*seq);
     *h = nh; *br = nb; *sc = ns; *seq = nq;
@@ -675,7 +675,7 @@ static int chat_run(Tok *tok, const K3ChatTemplate *tmpl, K3ChatHistory *history
     for (;;) {
         const int need = np + gen + 1;
         if (np > K3_MAX_PROMPT || need > K3_MAX_PROMPT + K3_MAX_GEN) {
-            fprintf(stderr, "chat: rendered transcript is %d tokens; current engine limit is %d prompt + %d generation tokens\n", np, K3_MAX_PROMPT, K3_MAX_GEN);
+            fprintf(stderr, "чат: отрендеренный транскрипт — %d токенов; текущий лимит движка %d промпт + %d токенов генерации\n", np, K3_MAX_PROMPT, K3_MAX_GEN);
             return 1;
         }
         if (incremental) {
@@ -684,7 +684,7 @@ static int chat_run(Tok *tok, const K3ChatTemplate *tmpl, K3ChatHistory *history
             if (avail > 0.0 && kv_need > avail * 0.9) {
                 char kb[32], ab[32];
                 human(kv_need, kb, sizeof kb); human(avail, ab, sizeof ab);
-                fprintf(stderr, "chat: KV cache for %d positions needs %s, but only %s is available; history was preserved\n", need, kb, ab);
+                fprintf(stderr, "чат: KV-кэш для %d позиций требует %s, но доступно только %s; история сохранена\n", need, kb, ab);
                 return 1;
             }
         }
@@ -716,7 +716,7 @@ static int chat_run(Tok *tok, const K3ChatTemplate *tmpl, K3ChatHistory *history
             w->cached = 0;
         }
         if (incremental)
-            printf("chat: %d of %d prompt positions already cached, prefilling %d\n",
+            printf("чат: %d из %d позиций промпта уже кэшировано, prefill для %d\n",
                    base, np, np - base);
         int T = np, nraw = 0, frc = 0;
         K3Sampler sampler; k3_sampler_init(&sampler, temperature, top_p, top_k, seed, (uint64_t)(turn + 1));
@@ -739,27 +739,27 @@ static int chat_run(Tok *tok, const K3ChatTemplate *tmpl, K3ChatHistory *history
             if (frc) break;
             int next = 0;
             if (k3_sampler_next(&sampler, lg, c->vocab, greedy, &next) != 0) {
-                fprintf(stderr, "chat: sampler failed\n"); frc = -1; break;
+                fprintf(stderr, "чат: сбой семплера\n"); frc = -1; break;
             }
             (*seq)[T++] = next; outtok[nraw++] = next;
             /* One line per token on stderr, unbuffered. At the speeds a streamed trunk
              * runs at (a minute or two per token), a REPL that prints nothing until the
              * turn is complete is indistinguishable from a hung one, and a turn cut off
              * by --gen or a timeout would otherwise leave no record of how far it got. */
-            fprintf(stderr, "chat: token %d/%d id %d (%.0f s)\n", nraw, gen, next, now_s() - t_turn0);
+            fprintf(stderr, "чат: токен %d/%d id %d (%.0f с)\n", nraw, gen, next, now_s() - t_turn0);
             if (next == tmpl->eom_id || next == tmpl->eos_id) {
-                printf("chat: turn ended by %s (%d)\n", next == tmpl->eom_id ? "<|end_of_msg|>" : "[EOS]", next);
+                printf("чат: ход завершён %s (%d)\n", next == tmpl->eom_id ? "<|end_of_msg|>" : "[EOS]", next);
                 break;
             }
         }
         k3_sampler_free(&sampler);
         if (frc || (nraw == gen && outtok[nraw - 1] != tmpl->eom_id && outtok[nraw - 1] != tmpl->eos_id)) {
-            fprintf(stderr, "chat: assistant did not complete an official turn within --gen %d; transcript is preserved\n", gen);
+            fprintf(stderr, "чат: ассистент не завершил официальный ход в пределах --gen %d; транскрипт сохранён\n", gen);
             return 1;
         }
         K3ChatMessage assistant;
         if (k3_chat_parse_assistant_opts(tok, tmpl, opts, outtok, nraw, &assistant, err, sizeof err) != 0) {
-            fprintf(stderr, "chat: malformed assistant turn: %s\n", err); return 1;
+            fprintf(stderr, "чат: некорректный ход ассистента: %s\n", err); return 1;
         }
         if (assistant.reasoning_content) printf("<think>%s</think>\n", assistant.reasoning_content);
         printf("<response>%s</response>\n", assistant.content);
@@ -776,13 +776,13 @@ static int chat_run(Tok *tok, const K3ChatTemplate *tmpl, K3ChatHistory *history
             char *line = NULL;
             if (!chat_read_line(&line)) return 0;
             if (!strcmp(line, "/exit")) { free(line); return 0; }
-            if (!strcmp(line, "/help")) { printf("/help  show commands\n/reset clear this conversation\n/exit  leave chat\n"); free(line); continue; }
+            if (!strcmp(line, "/help")) { printf("/help  показать команды\n/reset очистить диалог\n/exit  выйти из чата\n"); free(line); continue; }
             if (!strcmp(line, "/reset")) {
                 if (k3_chat_history_reset(history, err, sizeof err) != 0) {
                     fprintf(stderr, "chat: %s\n", err); free(line); return 1;
                 }
                 if (history_path && k3_chat_history_save(history, history_path, err, sizeof err)) { fprintf(stderr, "chat: %s\n", err); return 1; }
-                printf("chat reset\n"); free(line); continue;
+                printf("чат сброшен\n"); free(line); continue;
             }
             if (!*line) { free(line); continue; }
             if (k3_chat_history_add(history, K3_CHAT_USER, line, NULL, err, sizeof err)) { fprintf(stderr, "chat: %s\n", err); free(line); return 1; }
@@ -831,7 +831,7 @@ int main(int argc, char **argv)
 
     const char *dir = argv[1];
     if (dir[0] == '-') {
-        fprintf(stderr, "the first argument must be the model directory, got '%s'\n\n", dir);
+        fprintf(stderr, "первый аргумент должен быть каталогом модели, получено '%s'\n\n", dir);
         usage(stderr);
         return 2;
     }
@@ -881,7 +881,7 @@ int main(int argc, char **argv)
         else if (!strcmp(argv[i], "--gen") && i + 1 < argc) { gen = atoi(argv[++i]); gen_set = 1; }
         else if (!strcmp(argv[i], "--stop-id") && i + 1 < argc) {
             if (n_stop >= (int)(sizeof stop_id / sizeof stop_id[0])) {
-                fprintf(stderr, "--stop-id given more than %d times\n",
+                fprintf(stderr, "--stop-id указан более %d раз\n",
                         (int)(sizeof stop_id / sizeof stop_id[0]));
                 return 2;
             }
@@ -893,7 +893,7 @@ int main(int argc, char **argv)
                 char *end;
                 const long v = strtol(argv[++i], &end, 10);
                 if (*argv[i] == '\0' || *end != '\0' || v < 0) {
-                    fprintf(stderr, "--stop-id %s: expected a non-negative token id\n",
+                    fprintf(stderr, "--stop-id %s: ожидается неотрицательный id токена\n",
                             argv[i]);
                     return 2;
                 }
@@ -907,7 +907,7 @@ int main(int argc, char **argv)
              * silent 1. "-1" still parses, so the not-given sentinel keeps
              * working. */
             if (parse_int_strict(argv[i + 1], &want_layers) != 0) {
-                fprintf(stderr, "--layers %s is not an integer\n", argv[i + 1]);
+                fprintf(stderr, "--layers %s не является целым числом\n", argv[i + 1]);
                 return 2;
             }
             i++;
@@ -930,7 +930,7 @@ int main(int argc, char **argv)
             /* Strict for the same reason as --layers: atoi("8x") is 8 and a typo
              * should not silently pick a different thread count than the one typed. */
             if (parse_int_strict(argv[i + 1], &threads) != 0 || threads < 1) {
-                fprintf(stderr, "--threads %s: expected an integer of 1 or more\n", argv[i + 1]);
+                fprintf(stderr, "--threads %s: ожидается целое число >= 1\n", argv[i + 1]);
                 return 2;
             }
             i++;
@@ -946,7 +946,7 @@ int main(int argc, char **argv)
             const char *value = argv[++i];
             char *end = NULL;
             errno = 0; seed = strtoull(value, &end, 10);
-            if (value[0] == '-' || errno || !end || *end) { fprintf(stderr, "--seed needs an unsigned integer\n"); return 2; }
+            if (value[0] == '-' || errno || !end || *end) { fprintf(stderr, "--seed требует беззнаковое целое\n"); return 2; }
             seed_set = 1;
         }
         else if (!strcmp(argv[i], "--top-k") && i + 1 < argc) {
@@ -957,7 +957,7 @@ int main(int argc, char **argv)
             errno = 0;
             const long v = strtol(argv[++i], &end, 10);
             if (errno == ERANGE || end == argv[i] || *end != '\0' || v < 1 || v > INT_MAX) {
-                fprintf(stderr, "--top-k %s: expected an integer of 1 or more\n", argv[i]);
+                fprintf(stderr, "--top-k %s: ожидается целое число >= 1\n", argv[i]);
                 return 2;
             }
             top_k = (int)v; top_k_set = 1;
@@ -978,7 +978,7 @@ int main(int argc, char **argv)
         else if (!strcmp(argv[i], "--preset") && i + 1 < argc) {
             const K3Preset *p = k3_preset_find(argv[++i]);
             if (!p) {
-                fprintf(stderr, "unknown preset '%s'\n\n", argv[i]);
+                fprintf(stderr, "неизвестный пресет '%s'\n\n", argv[i]);
                 k3_preset_list(stderr);
                 return 2;
             }
@@ -995,7 +995,7 @@ int main(int argc, char **argv)
             return 0;
         }
         else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) { usage(stdout); return 0; }
-        else { fprintf(stderr, "unknown option %s\n\n", argv[i]); usage(stderr); return 2; }
+        else { fprintf(stderr, "неизвестная опция %s\n\n", argv[i]); usage(stderr); return 2; }
     }
 
 #ifdef _OPENMP
@@ -1009,19 +1009,19 @@ int main(int argc, char **argv)
         const int cores = k3_physical_cores();
         if (cores > 0 && cores < omp_get_max_threads()) omp_set_num_threads(cores);
     }
-    printf("threads: %d\n", omp_get_max_threads());
+    printf("потоков: %d\n", omp_get_max_threads());
 #else
     if (threads > 0)
-        fprintf(stderr, "--threads ignored: built without OpenMP\n");
+        fprintf(stderr, "--threads игнорируется: собрано без OpenMP\n");
 #endif
 
     if (ultra && !trunk_dir) {
-        fprintf(stderr, "--ultra-low-memory needs --trunk; resident trunk cannot fit its "
+        fprintf(stderr, "--ultra-low-memory требует --trunk; резидентный trunk не помещает его "
                         "memory contract\n");
         return 2;
     }
     if (ultra && budget_auto) {
-        fprintf(stderr, "--ultra-low-memory uses explicit bounded budgets; use "
+        fprintf(stderr, "--ultra-low-memory использует явные ограниченные бюджеты; используйте "
                         "--preset ultra or pass --trunk-gb/--cache-gb\n");
         return 2;
     }
@@ -1033,13 +1033,13 @@ int main(int argc, char **argv)
     }
     if (chat && !gen_set) gen = K3_MAX_GEN;
     if ((no_think || effort_set) && !chat) {
-        fprintf(stderr, "%s only applies to --chat\n", no_think ? "--no-think" : "--thinking-effort");
+        fprintf(stderr, "%s применимо только к --chat\n", no_think ? "--no-think" : "--thinking-effort");
         return 2;
     }
     if (no_think && effort_set) {
         /* The encoder silently ignores thinking_effort once thinking is off. A CLI that did
          * the same would run a very long prompt under a setting the user never got. */
-        fprintf(stderr, "--no-think and --thinking-effort contradict each other; pass one of them\n");
+        fprintf(stderr, "--no-think и --thinking-effort противоречат друг другу; передайте одно из них\n");
         return 2;
     }
     if (chat) {
@@ -1049,39 +1049,39 @@ int main(int argc, char **argv)
     {
         int nsrc = (ids_s != NULL) + (prompt_text != NULL) + (prompt_file != NULL);
         if (chat && nsrc) {
-            fprintf(stderr, "--chat supplies its prompt through the REPL/history; do not also pass --ids, --prompt, or --prompt-file\n");
+            fprintf(stderr, "--chat подаёт промпт через REPL/history; не передавайте также --ids, --prompt или --prompt-file\n");
             return 2;
         }
         if (!chat && nsrc == 0) {
-            fprintf(stderr, "one of --ids, --prompt or --prompt-file is required\n");
+            fprintf(stderr, "требуется один из --ids, --prompt или --prompt-file\n");
             return 2;
         }
         if (nsrc > 1) {
             /* Refuse rather than pick: silently preferring one source would make a
              * mistyped invocation run the WRONG prompt for tens of minutes. */
-            fprintf(stderr, "--ids, --prompt and --prompt-file are mutually exclusive\n");
+            fprintf(stderr, "--ids, --prompt и --prompt-file взаимоисключают друг друга\n");
             return 2;
         }
     }
     if (chat) {
         if (!tok_dir) {
-            fprintf(stderr, "--chat needs --tok DIR with the official Kimi K3 tokenizer files\n");
+            fprintf(stderr, "--chat требует --tok DIR с официальными файлами токенизатора Kimi K3\n");
             return 2;
         }
         if (load_state || save_state || draft_dir || spec_n || tf_check || logits_path || trace_dir || out_set) {
-            fprintf(stderr, "--chat cannot be combined with state files, speculative/draft modes, diagnostics, or --out\n");
+            fprintf(stderr, "--chat нельзя комбинировать с файлами состояния, speculative/draft режимами, диагностикой или --out\n");
             return 2;
         }
         if (!(temperature > 0.0) || !isfinite(temperature) || !(top_p > 0.0) || top_p > 1.0 || !isfinite(top_p)) {
-            fprintf(stderr, "--temperature must be finite and > 0; --top-p must be in (0, 1]\n");
+            fprintf(stderr, "--temperature должна быть конечной и > 0; --top-p должен быть в (0, 1]\n");
             return 2;
         }
         if (gen <= 0) {
-            fprintf(stderr, "--chat needs --gen greater than zero to complete an assistant turn\n");
+            fprintf(stderr, "--chat требует --gen больше нуля для завершения хода ассистента\n");
             return 2;
         }
     } else if (system_text || history_path || temperature_set || top_p_set || top_k_set || seed_set || greedy) {
-        fprintf(stderr, "--system, --history, --temperature, --top-p, --top-k, --seed, and --greedy require --chat\n");
+        fprintf(stderr, "--system, --history, --temperature, --top-p, --top-k, --seed и --greedy требуют --chat\n");
         return 2;
     }
     /* Greedy unless a sampling flag was given. Greedy decoding is what makes output
@@ -1107,7 +1107,7 @@ int main(int argc, char **argv)
     if (budget_auto) {
         const double avail = k3_mem_available_bytes();
         if (avail <= 0.0) {
-            fprintf(stderr, "--preset auto could not read this machine's available memory; "
+            fprintf(stderr, "--preset auto не смог прочитать доступную память этой машины; "
                             "pass explicit --trunk-gb/--cache-gb\n");
             return 2;
         }
@@ -1120,7 +1120,7 @@ int main(int argc, char **argv)
         const double slot_min = 2.5;   /* one ring slot + headroom; refuse below */
         const double cache_min = 0.5;  /* topk+1 expert slots is ~0.3 GB */
         if (usable < slot_min + cache_min) {
-            fprintf(stderr, "auto: only %.1f GB usable after the %.1f GB reserve; "
+            fprintf(stderr, "авто: только %.1f ГБ usable после резерва %.1f ГБ; "
                             "below the %.1f GB floor. Pass explicit budgets.\n",
                     usable, reserve, slot_min + cache_min);
             return 2;
@@ -1149,7 +1149,7 @@ int main(int argc, char **argv)
             if (trunk_gb > cap) trunk_gb = cap;
             cache_gb = cache_min;
         }
-        printf("auto budget: %.1f GB available, %.1f GB reserved -> trunk %.1f GB / "
+        printf("авто-бюджет: %.1f ГБ доступно, %.1f ГБ резерв -> trunk %.1f ГБ / "
                "expert cache %.1f GB\n", avail / 1e9, reserve, trunk_gb, cache_gb);
     }
 
@@ -1157,7 +1157,7 @@ int main(int argc, char **argv)
      * refuses a config that would overrun it rather than truncating the layer map. */
     K3Cfg c; static int fa[128];
     if (!real_cfg(&c, fa, 128, dir, cfg_path)) {
-        fprintf(stderr, "ABORTED: the model config could not be read with confidence.\n");
+        fprintf(stderr, "ПРЕРВАНО: конфиг модели не удалось прочитать с уверенностью.\n");
         return 2;
     }
     /* --layers 0, or anything past the real layer count, used to fall through this
@@ -1165,12 +1165,12 @@ int main(int argc, char **argv)
      * partial stack is a deliberate test instrument; an out-of-range request is a
      * typo, and a typo here should not look like a successful full-model run. */
     if (want_layers != -1 && (want_layers < 1 || want_layers > c.n_layers)) {
-        fprintf(stderr, "--layers %d is out of range: want 1..%d\n",
+        fprintf(stderr, "--layers %d вне диапазона: ожидается 1..%d\n",
                 want_layers, c.n_layers);
         return 2;
     }
     if (want_layers > 0 && want_layers < c.n_layers) {
-        printf("NOTE: binding only the first %d of %d layers. Output is NOT the full "
+        printf("ПРИМЕЧАНИЕ: привязываются только первые %d из %d слоёв. Вывод — НЕ полная "
                "model; it is a partial stack for testing the machinery.\n\n",
                want_layers, c.n_layers);
     }
@@ -1220,7 +1220,7 @@ int main(int argc, char **argv)
             if (!chat_read_line(&line)) { k3_chat_history_free(&chat_history); return 0; }
             if (!strcmp(line, "/exit")) { free(line); k3_chat_history_free(&chat_history); return 0; }
             if (!strcmp(line, "/help")) {
-                printf("/help  show commands\n/reset clear this conversation\n/exit  leave chat\n");
+                printf("/help  показать команды\n/reset очистить диалог\n/exit  выйти из чата\n");
                 free(line); continue;
             }
             if (!strcmp(line, "/reset")) {
@@ -1230,7 +1230,7 @@ int main(int argc, char **argv)
                 if (history_path && k3_chat_history_save(&chat_history, history_path, err, sizeof err) != 0) {
                     fprintf(stderr, "chat: %s\n", err); return 2;
                 }
-                printf("chat reset\n"); free(line); continue;
+                printf("чат сброшен\n"); free(line); continue;
             }
             if (!*line) { free(line); continue; }
             if (k3_chat_history_add(&chat_history, K3_CHAT_USER, line, NULL, err, sizeof err) != 0) {
@@ -1260,10 +1260,10 @@ int main(int argc, char **argv)
          * refused prompts longer than 4096 ids -- a stack-array size, not a model or
          * memory limit. */
         prompt = (int *)malloc((size_t)K3_MAX_PROMPT * sizeof(int));
-        if (!prompt) { fprintf(stderr, "OOM allocating prompt buffer\n"); return 2; }
+        if (!prompt) { fprintf(stderr, "OOM при выделении буфера промпта\n"); return 2; }
         if (prompt_text || prompt_file) {
             if (!tok_dir) {
-                fprintf(stderr, "--prompt/--prompt-file need --tok DIR (the directory with "
+                fprintf(stderr, "--prompt/--prompt-file требуют --tok DIR (каталог с "
                                 "tiktoken.model and tokenizer_config.json)\n");
                 return 2;
             }
@@ -1276,12 +1276,12 @@ int main(int argc, char **argv)
             } else {
                 plen  = (long)strlen(prompt_text);
                 ptext = (char *)malloc((size_t)plen + 1);
-                if (!ptext) { fprintf(stderr, "OOM on prompt\n"); return 2; }
+                if (!ptext) { fprintf(stderr, "OOM на промпте\n"); return 2; }
                 memcpy(ptext, prompt_text, (size_t)plen + 1);
             }
             np = tok_encode(&tok, ptext, (int)plen, prompt, K3_MAX_PROMPT);
             free(ptext);
-            printf("  tokenized: %ld bytes -> %d ids\n", plen, np);
+            printf("  токенизировано: %ld байт -> %d id\n", plen, np);
         } else {
             for (const char *p = ids_s; *p && np < K3_MAX_PROMPT; ) {
                 /* strtol with no endptr check spins on garbage: "abc" never advances
@@ -1296,7 +1296,7 @@ int main(int argc, char **argv)
                 const long v = strtol(p, &end, 10);
                 if (errno == ERANGE || end == p || v < INT_MIN || v > INT_MAX ||
                     (*end != ',' && *end != ' ' && *end != '\0')) {
-                    fprintf(stderr, "bad --ids: '%s' is not a comma separated list of "
+                    fprintf(stderr, "плохой --ids: '%s' не является списком через запятую из "
                                     "integers\n", ids_s);
                     return 2;
                 }
@@ -1306,10 +1306,10 @@ int main(int argc, char **argv)
             }
         }
     }
-    if (np == 0) { fprintf(stderr, "no prompt ids parsed\n"); return 2; }
+    if (np == 0) { fprintf(stderr, "не разобрано ни одного id промпта\n"); return 2; }
     for (int i = 0; i < np; i++)
         if (prompt[i] < 0 || prompt[i] >= c.vocab) {
-            fprintf(stderr, "token id %d is outside the vocabulary of %d\n", prompt[i], c.vocab);
+            fprintf(stderr, "id токена %d вне словаря размера %d\n", prompt[i], c.vocab);
             return 2;
         }
 
@@ -1319,7 +1319,7 @@ int main(int argc, char **argv)
      * supports should be told, not quietly handed fewer. The decode loop's own guard
      * (T >= Tmax) is a backstop, not a bounds check. */
     if (gen < 0 || gen > K3_MAX_GEN) {
-        fprintf(stderr, "--gen %d is out of range: this build generates at most %d "
+        fprintf(stderr, "--gen %d вне диапазона: эта сборка генерирует максимум %d "
                         "tokens (outtok[%d])\n", gen, K3_MAX_GEN, K3_MAX_GEN);
         return 2;
     }
@@ -1328,17 +1328,17 @@ int main(int argc, char **argv)
      * need different fixes. Refuse it here, where the vocabulary is finally known. */
     for (int s = 0; s < n_stop; s++)
         if (stop_id[s] >= c.vocab) {
-            fprintf(stderr, "--stop-id %d is outside the vocabulary of %d\n",
+            fprintf(stderr, "--stop-id %d вне словаря размера %d\n",
                     stop_id[s], c.vocab);
             return 2;
         }
     if (np > K3_MAX_PROMPT) {
-        fprintf(stderr, "prompt of %d ids exceeds the %d-id ceiling (seq[%d])\n",
+        fprintf(stderr, "промпт из %d id превышает потолок %d id (seq[%d])\n",
                 np, K3_MAX_PROMPT, K3_MAX_PROMPT + K3_MAX_GEN);
         return 2;
     }
     if (np + gen + 1 > K3_MAX_PROMPT + K3_MAX_GEN) {
-        fprintf(stderr, "prompt %d + gen %d + 1 exceeds the %d-position ceiling\n",
+        fprintf(stderr, "промпт %d + gen %d + 1 превышает потолок позиций %d\n",
                 np, gen, K3_MAX_PROMPT + K3_MAX_GEN);
         return 2;
     }
@@ -1352,7 +1352,7 @@ int main(int argc, char **argv)
         char kb[32], ab[32];
         human(kv_need, kb, sizeof kb);
         human(avail, ab, sizeof ab);
-        printf("  KV cache : %s for %d positions (%.2f MB/position)\n",
+        printf("  KV-кэш  : %s для %d позиций (%.2f МБ/позиция)\n",
                kb, np + gen + 1, K3_KV_BYTES_PER_POS / 1e6);
         if (avail > 0.0 && kv_need > avail * 0.9) {
             fprintf(stderr,
@@ -1367,23 +1367,23 @@ int main(int argc, char **argv)
     }
 
     char b1[32];
-    printf("Kimi K3, pure C, released checkpoint\n");
+    printf("Kimi K3, чистый C, выпущенный чекпоинт\n");
     /* The directory, not a shard count: the index has not been built yet at this point.
      * The count is printed by the "indexed N tensors from M shards" line below, once
      * k3_st_open has actually counted them. */
-    printf("  model    : %s\n", dir);
-    printf("  prompt   : %d tokens, generating %d\n", np, gen);
+    printf("  модель   : %s\n", dir);
+    printf("  промпт   : %d токенов, генерация %d\n", np, gen);
     /* Echo the preset so a captured log is self-describing: a timing figure is
      * meaningless without the budget that produced it. */
     if (preset_name)
-        printf("  preset   : %s (trunk %.2f GB / expert cache %.2f GB)\n",
+        printf("  пресет   : %s (trunk %.2f ГБ / кэш экспертов %.2f ГБ)\n",
                preset_name, trunk_gb, cache_gb);
     printf("\n");
 
     K3St st;
     double t0 = now_s();
     if (k3_st_open(&st, dir) != 0) return 1;
-    printf("indexed %d tensors from %d shards in %.2f s\n", st.nt, st.nshard, now_s() - t0);
+    printf("проиндексировано %d тензоров из %d шардов за %.2f с\n", st.nt, st.nshard, now_s() - t0);
 
     /* ---- how much will this take? Report BEFORE allocating, so a box that cannot
      * hold it fails with a number rather than an OOM kill. ---- */
@@ -1404,10 +1404,10 @@ int main(int argc, char **argv)
      * the two have very different memory profiles, so the banner must reflect the real
      * choice rather than a default. */
     if (trunk_dir)
-        printf("trunk on disk : %s total (STREAMED from %s, not held in RAM)\n",
+        printf("trunk на диске : %s всего (СТРИМИТСЯ из %s, не держится в RAM)\n",
                b1, trunk_dir);
     else
-        printf("resident trunk: %s in RAM (large matrices kept in the checkpoint's bf16,\n"
+        printf("резидентный trunk: %s в RAM (большие матрицы хранятся в bf16 чекпоинта,\n"
                "  fp32 only for the norms and biases that kernels read elementwise)\n", b1);
 
     /* Add up EVERYTHING before allocating anything. Being OOM-killed halfway through
@@ -1490,16 +1490,16 @@ int main(int argc, char **argv)
         if (k3_trunk_open(&trunk, trunk_dir, &c, (int64_t)(trunk_gb * 1e9),
                           trunk_ring) != 0) return 1;
         if (trunk.n_layers < NL) {
-            fprintf(stderr, "packed trunk has %d layers, need %d\n", trunk.n_layers, NL);
+            fprintf(stderr, "упакованный trunk имеет %d слоёв, нужно %d\n", trunk.n_layers, NL);
             return 1;
         }
         w.trunk = &trunk;
         w.n_bound = NL;
-        printf("trunk streaming enabled from %s in %.1f s\n", trunk_dir, now_s() - t0);
+        printf("стриминг trunk включён из %s за %.1f с\n", trunk_dir, now_s() - t0);
     } else {
         for (int L = 0; L < NL; L++) {
             if (k3_bind_layer(&st, &c, L, &w.lay[L]) != 0) {
-                fprintf(stderr, "bind failed at layer %d\n", L); return 1;
+                fprintf(stderr, "привязка не удалась на слое %d\n", L); return 1;
             }
             w.n_bound = L + 1;
             if ((L + 1) % 10 == 0 || L + 1 == NL) {
@@ -1508,7 +1508,7 @@ int main(int argc, char **argv)
             }
         }
         const double t_bind = now_s() - t0;
-        printf("trunk loaded in %.1f s (%.0f MB/s from disk)\n",
+        printf("trunk загружен за %.1f с (%.0f МБ/с с диска)\n",
                t_bind, (double)total / 1e6 / t_bind);
     }
 
@@ -1521,17 +1521,17 @@ int main(int argc, char **argv)
         printf("final norms: %s resident; embedding and lm_head streamed in %.1f s\n\n",
                b1, now_s() - t0);
     else
-        printf("embedding, final norm and lm_head: %s in %.1f s\n\n", b1, now_s() - t0);
+        printf("embedding, финальная норма и lm_head: %s за %.1f с\n\n", b1, now_s() - t0);
 
     K3Cache cache;
     if (k3_cache_init(&cache, &st, &c, (int64_t)(cache_gb * 1e9)) != 0) return 1;
     {   /* The plan is a forecast. This is the outcome. */
         char rb[32];
         human(peak_rss_bytes(), rb, sizeof rb);
-        printf("peak RSS after loading weights: %s  (the plan above is a forecast, "
+        printf("пиковый RSS после загрузки весов: %s  (план выше — прогноз, "
                "this is measured)\n", rb);
     }
-    printf("expert cache: %d slots x %.2f MB = %.2f GB (%.2f%% of the 1.45 TB expert pool)\n\n",
+    printf("кэш экспертов: %d слотов x %.2f МБ = %.2f ГБ (%.2f%% от пула экспертов 1,45 ТБ)\n\n",
            cache.nslot, (double)cache.slot_bytes / 1e6,
            (double)cache.nslot * cache.slot_bytes / 1e9,
            100.0 * cache.nslot / (double)(92 * c.n_experts));
@@ -1544,12 +1544,12 @@ int main(int argc, char **argv)
     int prior = 0;
     if (load_state) {
         if (!incremental) {
-            fprintf(stderr, "--load-state needs --incremental\n");
+            fprintf(stderr, "--load-state требует --incremental\n");
             return 2;
         }
         if (k3_state_peek(load_state, &shd) != 0) return 1;
         prior = shd.nseq;
-        printf("resuming from %s: %d prior positions, %d new\n\n", load_state, prior, np);
+        printf("возобновление из %s: %d предыдущих позиций, %d новых\n\n", load_state, prior, np);
     }
     int Tmax = prior + np + gen + 1;
     const int E = c.hidden;
@@ -1567,7 +1567,7 @@ int main(int argc, char **argv)
         const size_t need_scratch = (size_t)(maxb + 2) * E;
         const size_t have_scratch = k3_layer_scratch(&c, Tmax);
         if (have_scratch < need_scratch) {
-            fprintf(stderr, "scratch is %zu floats, the attn-res aggregator needs %zu\n",
+            fprintf(stderr, "scratch — %zu float'ов, агрегатору attn-res нужно %zu\n",
                     have_scratch, need_scratch);
             return 1;
         }
@@ -1584,13 +1584,13 @@ int main(int argc, char **argv)
     }
     float *sc = (float *)malloc(sc_need * sizeof(float));
     float *lg = (float *)malloc((size_t)c.vocab * sizeof(float));
-    if (!h || !br || !ks || !sc || !lg) { fprintf(stderr, "buffer allocation failed\n"); return 1; }
+    if (!h || !br || !ks || !sc || !lg) { fprintf(stderr, "не удалось выделить буферы\n"); return 1; }
     human((double)(kper * state_layers) * 4, b1, sizeof b1);
     if (state_layers == 1 && NL > 1)
-        printf("recurrent state: one %s slot, cleared and reused across %d layers\n\n",
+        printf("рекуррентное состояние: один слот %s, очищается и повторно используется на %d слоях\n\n",
                b1, NL);
     else
-        printf("recurrent state for %d layers: %s\n\n", state_layers, b1);
+        printf("рекуррентное состояние для %d слоёв: %s\n\n", state_layers, b1);
 
     /* ---- generate ----
      * Heap and sized from the ACTUAL request, not from the ceiling. These were
@@ -1598,7 +1598,7 @@ int main(int argc, char **argv)
      * which is why the ceiling had to stay small enough to be a stack array. */
     int *seq = (int *)malloc((size_t)(prior + np + gen + 8) * sizeof(int));
     int *outtok = (int *)malloc((size_t)(gen + 8) * sizeof(int));
-    if (!seq || !outtok) { fprintf(stderr, "OOM allocating sequence buffers\n"); return 1; }
+    if (!seq || !outtok) { fprintf(stderr, "OOM при выделении буферов последовательности\n"); return 1; }
     /* On a resume the saved history occupies the front of the sequence and the prompt
      * given now is its continuation; the restore below fills seq[0..prior). */
     memcpy(seq + prior, prompt, (size_t)np * sizeof(int));
@@ -1622,11 +1622,11 @@ int main(int argc, char **argv)
         const size_t rpper = (size_t)w.kv_cap * c.qk_rope;
         const double kvb = (double)(kvper + rpper) * w.n_mla * sizeof(float);
         human(kvb, b1, sizeof b1);
-        printf("incremental decode: KV cache %s for %d MLA layers at %d positions\n\n",
+        printf("инкрементальный декодинг: KV-кэш %s для %d MLA-слоёв на %d позициях\n\n",
                b1, w.n_mla, w.kv_cap);
         w.kvc   = (float *)calloc(kvper * (size_t)w.n_mla, sizeof(float));
         w.ropec = (float *)calloc(rpper * (size_t)w.n_mla, sizeof(float));
-        if (!w.kvc || !w.ropec) { fprintf(stderr, "KV cache allocation failed\n"); return 1; }
+        if (!w.kvc || !w.ropec) { fprintf(stderr, "не удалось выделить KV-кэш\n"); return 1; }
         memset(ks, 0, kper * (size_t)NL * sizeof(float));
         w.cached = 0;
 
@@ -1646,7 +1646,7 @@ int main(int argc, char **argv)
          * and grown with it; if it cannot be allocated every turn simply re-prefills. */
         K3Prefix pf; memset(&pf, 0, sizeof pf);
         if (incremental && !k3_prefix_alloc(&pf, Tmax))
-            fprintf(stderr, "chat: no memory for the prefix record; every turn will re-prefill\n");
+            fprintf(stderr, "чат: нет памяти для записи префикса; каждый ход будет делать повторный prefill\n");
         const int rc = chat_run(&tok, &chat_template, &chat_history, &chat_opts, history_path,
                                 &prompt, np, gen, incremental, greedy, temperature,
                                 top_p, top_k, seed, &w, &c, &cache, NL, &Tmax, &h, &br, ks,
@@ -1660,7 +1660,7 @@ int main(int argc, char **argv)
         free(h); free(br); free(ks); free(sc); free(lg); free(seq); free(outtok);
         free(prompt); k3_chat_history_free(&chat_history);
         if (k3_expert_drops) {
-            fprintf(stderr, "chat invalid: %ld routed expert load(s) failed; the transcript was preserved\n", k3_expert_drops);
+            fprintf(stderr, "чат недействителен: %ld загрузок маршрутизируемых экспертов не удалось; транскрипт сохранён\n", k3_expert_drops);
             return 4;
         }
         return rc;
@@ -1675,13 +1675,13 @@ int main(int argc, char **argv)
     float *spec_snap = NULL;
     if (spec_n > 0) {
         if (!incremental) {
-            fprintf(stderr, "--spec needs --incremental; ignoring --spec\n");
+            fprintf(stderr, "--spec требует --incremental; игнорируется --spec\n");
             spec_n = 0;
         } else {
             if (spec_n > K3_SPEC_MAX) spec_n = K3_SPEC_MAX;
             spec_snap = (float *)malloc(kper_f * (size_t)w.n_bound * sizeof(float));
-            if (!spec_snap) { fprintf(stderr, "OOM for the --spec snapshot\n"); return 1; }
-            printf("speculative decode: up to %d drafted tokens per sweep, n-gram lookup, "
+            if (!spec_snap) { fprintf(stderr, "OOM для снапшота --spec\n"); return 1; }
+            printf("спекулятивный декодинг: до %d драфт-токенов за прогон, n-граммный поиск, "
                    "verified batched\n\n", spec_n);
         }
     }
@@ -1702,14 +1702,14 @@ int main(int argc, char **argv)
     long hyb_rounds = 0, hyb_drafted = 0, hyb_accepted = 0;
     if (draft_dir) {
         if (!incremental || !trunk_dir) {
-            fprintf(stderr, "--draft-trunk needs --incremental and --trunk; ignoring\n");
+            fprintf(stderr, "--draft-trunk требует --incremental и --trunk; игнорируется\n");
             draft_dir = NULL;
         } else {
             if (spec_n <= 0) spec_n = 4;
             if (spec_n > K3_SPEC_MAX) spec_n = K3_SPEC_MAX;
             if (!spec_snap) {
                 spec_snap = (float *)malloc(kper_f * (size_t)w.n_bound * sizeof(float));
-                if (!spec_snap) { fprintf(stderr, "OOM for the --spec snapshot\n"); return 1; }
+                if (!spec_snap) { fprintf(stderr, "OOM для снапшота --spec\n"); return 1; }
             }
             if (k3_trunk_open(&trunk_d, draft_dir, &c, (int64_t)(draft_gb * 1e9),
                               trunk_ring) != 0)
@@ -1722,7 +1722,7 @@ int main(int argc, char **argv)
             dw.kvc   = (float *)calloc(kvperd * (size_t)w.n_mla, sizeof(float));
             dw.ropec = (float *)calloc(rpperd * (size_t)w.n_mla, sizeof(float));
             if (!dw.lay || !dks || !dsnap || !dw.kvc || !dw.ropec) {
-                fprintf(stderr, "OOM for the draft model state\n"); return 1;
+                fprintf(stderr, "OOM для состояния драфт-модели\n"); return 1;
             }
             dw.mb = w.mb;              /* embed + lm_head are the same tensors */
             dw.trunk = &trunk_d;
@@ -1732,7 +1732,7 @@ int main(int argc, char **argv)
             dw.kv_cap = w.kv_cap;
             dw.cached = 0;
             dw.draft_mode = 1;   /* cache-only routing: draft tokens read no new experts */
-            printf("hybrid decode: draft trunk %s (%.1f GB budget) proposes up to %d "
+            printf("гибридный декодинг: драфт-trunk %s (бюджет %.1f ГБ) предлагает до %d "
                    "tokens per sweep;\n               the exact model verifies every one "
                    "before it is emitted\n\n", draft_dir, draft_gb, spec_n);
         }
@@ -1745,17 +1745,17 @@ int main(int argc, char **argv)
      * one number a quantized-draft design stands on. Free-running comparisons cannot
      * measure it: a single early divergence changes every later context. */
     if (tf_check) {
-        if (np < 2) { fprintf(stderr, "--tf-check needs at least 2 ids\n"); return 2; }
+        if (np < 2) { fprintf(stderr, "--tf-check требует минимум 2 id\n"); return 2; }
         int *arg = (int *)malloc((size_t)np * sizeof(int));
-        if (!arg) { fprintf(stderr, "OOM for --tf-check\n"); return 1; }
+        if (!arg) { fprintf(stderr, "OOM для --tf-check\n"); return 1; }
         const double t0c = now_s();
         if (forward(&w, &c, &cache, seq, np, lg, sc, h, br, ks, arg) != 0) {
-            fprintf(stderr, "forward failed in --tf-check\n");
+            fprintf(stderr, "прямой проход не удался в --tf-check\n");
             return 1;
         }
         int match = 0;
         for (int i = 0; i + 1 < np; i++) match += (arg[i] == seq[i + 1]);
-        printf("teacher-forced agreement: %d/%d positions (%.1f%%) in %.1f s\n",
+        printf("согласие teacher-forced: %d/%d позиций (%.1f%%) за %.1f с\n",
                match, np - 1, 100.0 * match / (np - 1), now_s() - t0c);
         printf("  per-position (p=predicted a=actual): ");
         for (int i = 0; i + 1 < np; i++)
@@ -1799,7 +1799,7 @@ int main(int argc, char **argv)
             /* Checked at the top, so the step that was in flight when the signal
              * arrived has finished and its KV rows and recurrent state are exact. */
             interrupted = 1;
-            printf("interrupted: %d of %d tokens generated; state, results and reports "
+            printf("прервано: %d из %d токенов сгенерировано; состояние, результаты и отчёты "
                    "follow as for a finished run\n", nout, gen);
             break;
         }
@@ -1920,7 +1920,7 @@ int main(int argc, char **argv)
         }
         /* Abort the run rather than argmax a buffer the forward never wrote. */
         if (frc != 0 || emitn == 0) {
-            fprintf(stderr, "forward pass failed at generation step %d; aborting.\n", g);
+            fprintf(stderr, "прямой проход не удался на шаге генерации %d; прерывание.\n", g);
             return 1;
         }
         const int nxt = emit[emitn - 1];
@@ -1936,9 +1936,9 @@ int main(int argc, char **argv)
             if (lf) {
                 fwrite(lg, sizeof(float), (size_t)c.vocab, lf);
                 fclose(lf);
-                printf("wrote %s (%d float32 logits)\n", logits_path, c.vocab);
+                printf("записан %s (%d float32 логитов)\n", logits_path, c.vocab);
             } else {
-                fprintf(stderr, "cannot open %s for the logits dump\n", logits_path);
+                fprintf(stderr, "не могу открыть %s для дампа логитов\n", logits_path);
             }
         }
         const double dt = now_s() - ts;
@@ -1964,14 +1964,14 @@ int main(int argc, char **argv)
             if (hit_stop) break;
         }
         if (hit_stop) {
-            printf("stop id %d reached after %d of %d tokens\n", stopped_at, nout, gen);
+            printf("stop id %d достигнут после %d из %d токенов\n", stopped_at, nout, gen);
             break;
         }
         if (T >= Tmax) break;
     }
     if (save_state) {
         if (!incremental) {
-            fprintf(stderr, "--save-state needs --incremental; nothing written\n");
+            fprintf(stderr, "--save-state требует --incremental; ничего не записано\n");
         } else {
             const double tsv = now_s();
             const int64_t kvpp   = (int64_t)c.n_heads * (c.qk_nope + c.v_head);
@@ -1983,7 +1983,7 @@ int main(int argc, char **argv)
                     + (double)kper * w.n_bound * sizeof(float)
                     + (double)w.cached * (kvpp + ropepp) * w.n_mla * sizeof(float);
                 char sb[32]; human(bytes, sb, sizeof sb);
-                printf("wrote %s (%s, %d positions) in %.2f s\n",
+                printf("записан %s (%s, %d positions) in %.2f s\n",
                        save_state, sb, w.cached, now_s() - tsv);
             }
         }
@@ -2023,15 +2023,15 @@ int main(int argc, char **argv)
     {
         char rb[32];
         human(peak_b, rb, sizeof rb);
-        printf("PEAK RSS for the whole run: %s   <- quote this, not the plan\n", rb);
-        printf("layers completed: %d/%d; routed expert drops: %ld\n\n",
+        printf("ПИКОВЫЙ RSS за весь прогон: %s   <- цитируйте это, а не план\n", rb);
+        printf("слоёв завершено: %d/%d; потерь маршрутизируемых экспертов: %ld\n\n",
                w.layers_completed, NL, k3_expert_drops);
     }
     k3_cache_report(&cache, "final step");
 
     FILE *f = fopen(outp, "w");
     if (!f) {
-        fprintf(stderr, "cannot write %s\n", outp);
+        fprintf(stderr, "не могу записать %s\n", outp);
         out_fail = 1;
     }
     if (f) {
@@ -2058,7 +2058,7 @@ int main(int argc, char **argv)
         json_string(f, generated_text);
         fputs("}\n", f);
         fclose(f);
-        printf("\nwrote %s\n", outp);
+        printf("\nзаписан %s\n", outp);
     }
     if (trace_dir) {
         char p[4096];
@@ -2084,16 +2084,16 @@ int main(int argc, char **argv)
          * understates the expert share by roughly the token count. */
         const double io_s = trunk_s + expert_s_total + model_s;
         const double share = t_total > 0 ? 100.0 * io_s / t_total : 0.0;
-        printf("I/O share of wall clock: %.1f%%  (trunk %.1f s + experts %.1f s + "
+        printf("доля I/O от wall clock: %.1f%%  (trunk %.1f с + эксперты %.1f с + "
                "model tables %.1f s of %.1f s)\n",
                share, trunk_s, expert_s_total, model_s, t_total);
-        printf("  both figures are WHOLE-RUN totals over %d steps\n", nout);
+        printf("  обе цифры — ИТОГИ за весь прогон на %d шагах\n", nout);
         /* Above 100% is not a bug in the arithmetic: with more than one trunk ring slot
          * the reader thread does device work while the main thread computes, so the two
          * terms genuinely overlap and their sum can exceed wall clock. Say so, rather
          * than printing an impossible percentage with no explanation. */
         if (share > 100.0)
-            printf("  over 100%% because trunk reads overlap compute on the reader thread;\n"
+            printf("  свыше 100%%, потому что чтения trunk перекрывают вычисления на потоке читателя;\n"
                    "  %.1f s of device time was hidden behind arithmetic\n", io_s - t_total);
         /* Report the DERIVED retention, not the raw hit count. `hits` counts an expert
          * the batch prefetch pulled off disk microseconds earlier, so it equals the
@@ -2105,7 +2105,7 @@ int main(int argc, char **argv)
         const unsigned long long retained =
             (expert_reqs_total > expert_evict_total)
                 ? (unsigned long long)(expert_reqs_total - expert_evict_total) : 0ULL;
-        printf("  experts, whole run: %.2f GB read | %llu of %llu requests retained in RAM"
+        printf("  эксперты, весь прогон: %.2f ГБ прочитано | %llu из %llu запросов удержано в RAM"
                " (%.2f%%) | %llu evictions\n"
                "    (retention = requests - evictions; the raw `hits` counter includes\n"
                "     experts the prefetcher had just read from disk, so it is not a\n"
@@ -2130,7 +2130,7 @@ int main(int argc, char **argv)
      * corruption that exits 0 is indistinguishable from a good run. */
     if (k3_expert_drops) {
         fprintf(stderr,
-                "\nRUN INVALID: %ld routed expert load(s) failed and were dropped from\n"
+                "\nПРОГОН НЕДЕЙСТВИТЕЛЕН: %ld загрузок маршрутизируемых экспертов не удалось и они выпали из\n"
                 "the MoE sum. The token ids above are CORRUPT. Re-run; if this repeats,\n"
                 "the shard set or the storage is at fault.\n", k3_expert_drops);
         return 4;

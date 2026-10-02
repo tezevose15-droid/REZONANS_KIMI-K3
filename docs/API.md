@@ -1,103 +1,86 @@
 # C API
 
-For embedding the engine rather than using the `k3` binary. The public surface is
-`include/k3/k3.h` and `include/k3/k3_cfg.h`.
+Для встраивания движка вместо использования бинарника `k3`. Публичный интерфейс — `include/k3/k3.h` и `include/k3/k3_cfg.h`.
 
 ```c
 #include <k3/k3.h>
 #include <k3/k3_cfg.h>
 ```
 
-The API is deliberately small: a configuration struct, weight-binding structs, and the
-kernels. There is no context object and no hidden global state, everything a call needs
-is passed to it.
+API намеренно минимальный: структура конфигурации, структуры привязки весов и ядра (kernels). Нет объекта контекста и скрытого глобального состояния — всё, что нужно вызову, передаётся ему.
 
-## Configuration
+## Конфигурация
 
 ```c
 K3Cfg cfg;
 int   full_attn[128];
 
 if (!k3_cfg_load_file(&cfg, full_attn, 128, "model/config.json")) {
-    /* Do not proceed. A partially-populated K3Cfg describes a different model. */
+    /* Не продолжайте. Частично заполненный K3Cfg описывает другую модель. */
     return 1;
 }
 ```
 
-`k3_cfg_load_file` reads the checkpoint's own configuration and populates every field.
+`k3_cfg_load_file` читает собственную конфигурацию чекпоинта и заполняет каждое поле.
 
-**It never substitutes a default for a missing field.** If a key is absent it collects
-every such key, reports them together, and returns 0. This matters more than it appears:
-a configuration reader that defaults silently produces an engine that loads, streams,
-decodes, and emits fluent text from the wrong architecture, with nothing to indicate it.
+**Функция никогда не подставляет значение по умолчанию для отсутствующего поля.** Если ключ отсутствует, она собирает все такие ключи, сообщает о них вместе и возвращает 0. Это важнее, чем кажется: загрузчик конфигурации, молча подставляющий значения по умолчанию, порождает движок, который загружается, стримит, декодирует и выдаёт связный текст из неверной архитектуры, без каких-либо признаков ошибки.
 
-Both layouts are accepted, the released nested form (`text_config.*`) and the flat form
-used by the test fixtures.
+Поддерживаются оба формата: выпущенный вложенный формат (`text_config.*`) и плоский формат, используемый в тестовых фикстурах.
 
-Layer roles:
+Роли слоёв:
 
 ```c
-k3_is_mla(&cfg, layer)     /* Gated MLA layer          */
+k3_is_mla(&cfg, layer)     /* Gated MLA слой          */
 k3_is_kda(&cfg, layer)     /* Kimi Delta Attention     */
-k3_is_dense(&cfg, layer)   /* the single dense layer   */
+k3_is_dense(&cfg, layer)   /* единственный dense-слой   */
 ```
 
-`full_attn` holds ONE-BASED layer indices, matching the checkpoint's own convention.
+`full_attn` содержит индексы слоёв, начиная с ЕДИНИЦЫ, в соответствии с соглашением самого чекпоинта.
 
-## Scratch memory
+## Временная (scratch) память
 
-Every kernel takes caller-provided scratch. Sizes come from the engine, not from your
-own arithmetic, recomputing them by hand is the easiest way to overrun a buffer
-silently.
+Каждое ядро принимает предоставляемую вызывающей стороной временную память. Размеры берутся из движка, а не из собственных вычислений — пересчитывать их вручную — самый простой способ молча выйти за границы буфера.
 
 ```c
 size_t n = k3_layer_scratch(&cfg, n_tokens);
 float *scratch = malloc(n * sizeof(float));
 ```
 
-| function | covers |
+| функция | покрытие |
 |---|---|
-| `k3_layer_scratch(cfg, T)` | a whole decoder layer |
-| `k3_kda_scratch(cfg, T)` | a KDA layer |
-| `k3_mla_scratch(cfg, T)` | an MLA layer, no KV cache |
-| `k3_mla_scratch_cached(cfg, T, cap, mode)` | an MLA layer with a KV cache |
-| `k3_moe_scratch(cfg)` | the MoE block |
+| `k3_layer_scratch(cfg, T)` | целый слой декодера |
+| `k3_kda_scratch(cfg, T)` | слой KDA |
+| `k3_mla_scratch(cfg, T)` | слой MLA без KV-кэша |
+| `k3_mla_scratch_cached(cfg, T, cap, mode)` | слой MLA с KV-кэшем |
+| `k3_moe_scratch(cfg)` | блок MoE |
 
-## Weight structures
+## Структуры весов
 
-`K3KdaW`, `K3MlaW`, `K3MoeW` and `K3LayerW` describe where a layer's tensors live.
+`K3KdaW`, `K3MlaW`, `K3MoeW` и `K3LayerW` описывают, где находятся тензоры слоя.
 
-> **Zero every weight struct before filling it.** These hold function pointers
-> (`K3MoeW::src`) and pointers whose NULL-ness selects a code path, dense versus MoE,
-> gated versus ungated MLA. An uninitialised stack struct does not merely read the wrong
-> weights; it can jump to an arbitrary address.
+> **Обнуляйте каждую структуру весов перед заполнением.** Они содержат указатели на функции (`K3MoeW::src`) и указатели, чья проверка на NULL выбирает путь выполнения — dense против MoE, gated против ungated MLA. Неинициализированная структура на стеке не просто прочитает неверные веса; она может совершить переход по произвольному адресу.
 
 ```c
 K3MoeW moe;
-memset(&moe, 0, sizeof moe);   /* required, not defensive */
+memset(&moe, 0, sizeof moe);   /* обязательно, а не для перестраховки */
 ```
 
-Weight matrices are tagged pointers: `K3_WF32` (0) or `K3_WBF16` (1). Because `K3_WF32`
-is zero, a `memset` struct defaults to fp32. Dispatch through `k3_mmw()` rather than
-calling the typed matmuls directly.
+Матрицы весов — типизированные указатели: `K3_WF32` (0) или `K3_WBF16` (1). Поскольку `K3_WF32` равен нулю, структура после `memset` по умолчанию имеет тип fp32. Используйте диспетчеризацию через `k3_mmw()` вместо прямого вызова типизированных matmul.
 
-## Running a layer
+## Запуск слоя
 
 ```c
 k3_decoder_layer(hidden, block_residual, &n_blocks, &weights, &cfg,
                  layer_idx, n_tokens, kda_state, scratch);
 ```
 
-`k3_decoder_layer_inc()` is the incremental form: MLA attends over a KV cache of earlier
-positions and appends its own. KDA needs nothing carried, it updates its recurrent state
-in place, and the Attention-Residual block stack is per token.
+`k3_decoder_layer_inc()` — инкрементальная форма: MLA работает поверх KV-кэша предыдущих позиций и добавляет свою. KDA не требует переноса состояния, он обновляет своё рекуррентное состояние на месте, а стек блоков Attention-Residual — на токен.
 
-Both must produce identical tokens. The test suite asserts this rather than assuming it.
+Оба варианта должны выдавать идентичные токены. Набор тестов проверяет это, а не предполагает.
 
-## Streaming experts
+## Стриминг экспертов
 
-Provide a `K3ExpertSrc` and the MoE block will fetch experts on demand instead of reading
-a resident bank:
+Предоставьте `K3ExpertSrc`, и блок MoE будет подгружать экспертов по требованию вместо чтения из резидентного банка:
 
 ```c
 typedef struct K3ExpertSrc {
@@ -107,43 +90,33 @@ typedef struct K3ExpertSrc {
 } K3ExpertSrc;
 ```
 
-- `get` must keep the returned pointers valid until the caller finishes the token.
-- `getmany` is an optional batch hint. It may be NULL, and callers must cope, falling
-  back to `get` alone is always correct, only slower. It exists because issuing the whole
-  top-k at once lets the reads overlap; serial `get` calls give the device a queue depth
-  of one, which most NVMe hardware needs depth to saturate.
+- `get` должен сохранять валидность возвращаемых указателей до завершения обработки токена вызывающей стороной.
+- `getmany` — опциональная подсказка для пакетной обработки. Может быть NULL, и вызывающие стороны должны это учитывать — откат только к `get` всегда корректен, лишь медленнее. Он существует, потому что выдача сразу всего top-k позволяет перекрыть чтения; последовательные вызовы `get` дают устройству глубину очереди в единицу, а большинству NVMe-накопителей нужна глубина для насыщения.
 
-Experts stay in packed MXFP4 throughout. `k3_matmul_mxfp4` consumes nibbles directly and
-never materialises a dequantised matrix, one expert is 17.5 MB packed against 132 MB
-expanded, and a token touches 1,472 of them.
+Эксперты остаются упакованными в MXFP4 на всём пути. `k3_matmul_mxfp4` потребляет нибблы напрямую и никогда не материализует деквантованную матрицу: один эксперт — 17,5 МБ в упакованном виде против 132 МБ в развёрнутом, а токен затрагивает 1 472 из них.
 
-## Error handling
+## Обработка ошибок
 
-Two failure modes need explicit attention from callers.
+Два режима отказов требуют явного внимания со стороны вызывающих.
 
-**`k3_expert_drops`** is a global counter incremented whenever a streamed expert could
-not be loaded. Non-zero means some token was computed with part of its routed
-contribution missing, silent numerical corruption. The run completes and prints a
-plausible token.
+**`k3_expert_drops`** — глобальный счётчик, инкрементируемый всякий раз, когда стримимый эксперт не удалось загрузить. Ненулевое значение означает, что некоторый токен был вычислен с отсутствующей частью routed-вклада — тихая числовая порча. Прогон завершается и выводит правдоподобный токен.
 
 ```c
 if (k3_expert_drops) {
-    fprintf(stderr, "%ld experts failed to load; output is corrupt\n", k3_expert_drops);
-    return 1;   /* fail the run; do not report success */
+    fprintf(stderr, "%ld экспертов не удалось загрузить; вывод повреждён\n", k3_expert_drops);
+    return 1;   /* завершить прогон с ошибкой; не сообщать об успехе */
 }
 ```
 
-**Configuration load failure** must abort, as above. There is no safe partial state.
+**Сбой загрузки конфигурации** должен прерывать выполнение, как показано выше. Безопасного частичного состояния не существует.
 
-## Thread safety
+## Потокобезопасность
 
-The kernels are reentrant and parallelise internally with OpenMP. They hold no global
-state except `k3_expert_drops`.
+Ядра реентерабельны и распараллеливаются внутри с помощью OpenMP. Они не хранят глобального состояния, кроме `k3_expert_drops`.
 
-The cache, the trunk reader, and the safetensors index are **not** thread-safe. One
-inference at a time per instance.
+Кэш, читатель trunk и индекс safetensors **не потокобезопасны**. Один вывод за раз на экземпляр.
 
-## Minimal example
+## Минимальный пример
 
 ```c
 K3Cfg cfg; int fa[128];
@@ -154,7 +127,7 @@ float *scratch = malloc(k3_layer_scratch(&cfg, T) * sizeof(float));
 for (int L = 0; L < cfg.n_layers; L++)
     k3_decoder_layer(h, block_res, &nblocks, &layer_w[L], &cfg, L, T, kstate, scratch);
 
-if (k3_expert_drops) return 1;   /* check before trusting the output */
+if (k3_expert_drops) return 1;   /* проверьте перед тем как доверять выводу */
 ```
 
-See `src/cli/k3_run.c` for the complete path, including trunk streaming and the KV cache.
+См. `src/cli/k3_run.c` для полного пути, включая стриминг trunk и KV-кэш.

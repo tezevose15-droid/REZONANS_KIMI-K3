@@ -1,71 +1,43 @@
-# Roadmap
+# План развития (Roadmap)
 
-Ordered by value, with the reasoning stated so the order can be argued with.
+Упорядочено по ценности, с изложением reasoning, чтобы порядок можно было оспорить.
 
-## 1. Chunked prefill, the highest-value missing piece
+## 1. Чанкированный prefill — самый ценный отсутствующий кусок
 
-Prefill currently runs as a single forward pass over the whole prompt, and attention in
-the 24 MLA layers is quadratic in sequence length. The practical effect: the context
-ceiling is 32k tokens, but a 21k-token prompt does not complete in reasonable time.
+Prefill сейчас выполняется как один прямой проход по всему промпту, а внимание в 24 слоях MLA квадратично от длины последовательности. Практический эффект: потолок контекста — 32k токенов, но промпт на 21k токенов не завершается за разумное время.
 
-Raising the ceiling was necessary and is done. This is the part that makes it usable.
+Поднятие потолка было необходимо и выполнено. Это — часть, которая делает его usable.
 
-## 2. Re-run the published campaign under the replicating harness
+## 2. Перезапустить опубликованную кампанию на реплицирующем харнесе
 
-The measured noise floor is 33%, and almost every published figure is a single sample.
-The harness itself is done, `benchmarks/memory-ladder.sh` and `benchmarks/split-sweep.sh`
-already default to 3 repeats and report mean, sd and spread. What remains is re-running
-the 12 ladder rungs and the 12 splits under it and replacing the single-sample tables in
-docs/data/ with replicated ones.
+Измеренный уровень шума — 33%, и почти каждая опубликованная цифра — единичная выборка. Сам харнес готов: `benchmarks/memory-ladder.sh` и `benchmarks/split-sweep.sh` уже по умолчанию делают 3 повтора и сообщают среднее, ст. откл. и разброс. Осталось перезапустить 12 ступеней лестницы и 12 разбиений на нём и заменить односемпловые таблицы в docs/data/ на реплицированные.
 
-## 3. Thread scaling
+## 3. Масштабирование по потокам
 
-`OMP_NUM_THREADS` has never been swept on this engine. The workload is I/O bound at low
-memory budgets, so the useful thread count is probably well below the core count, and
-on memory-bound workloads throughput often *declines* past a point. Unknown here.
+`OMP_NUM_THREADS` никогда не прогонялся (sweep) на этом движке. Нагрузка I/O-bound при малых бюджетах памяти, поэтому полезное число потоков, вероятно, значительно ниже числа ядер, а на memory-bound нагрузках пропускная способность часто *падает* после определённой точки. Здесь неизвестно.
 
-## 4. SIMD in the KDA recurrence
+## 4. SIMD в KDA-рекуррентности
 
-The bf16 trunk matmul and the MXFP4 expert matmul already have hand-written AVX2 paths
-(`src/core/k3_ops.c`), each written to reproduce the scalar reduction order exactly. The
-KDA recurrence does not: it is still plain scalar C, and it is the largest remaining
-un-vectorised kernel on the non-I/O path.
+Bf16 trunk matmul и MXFP4 expert matmul уже имеют рукописные AVX2-ветки (`src/core/k3_ops.c`), каждая написана так, чтобы точно воспроизводить порядок редукции скалярного пути. KDA-рекуррентность — нет: она по-прежнему на чистом скалярном C и является крупнейшим оставшимся невекторизованным ядром на не-I/O пути.
 
-## 5. Sampling
+## 5. Выборка (Sampling)
 
-Batch generation is greedy only. Chat has opt-in temperature, top-p and seed
-(`--temperature`, `--top-p`, `--seed`), and is greedy until one of them is given. Keep
-it that way: greedy decoding is what makes output identical across memory budgets, which
-is a property the test suite depends on.
+Пакетная генерация — только жадная. Чат имеет опциональные температуру, top-p и seed (`--temperature`, `--top-p`, `--seed`) и остаётся жадным, пока одно из них не задано. Пусть так и остаётся: жадный декодинг — то, что делает вывод идентичным при разных бюджетах памяти, и на это опирается набор тестов.
 
-## 6. Chat retained-state equivalence
+## 6. Эквивалентность сохраняемого состояния чата
 
-Text chat implements K3's official XTML formatting, JSONL restart, and, under
-`--incremental`, retains the KDA/MLA state across REPL turns: the ids are recorded where
-they are fed (`src/chat/k3_prefix.h`), and a turn whose rendered transcript begins with
-exactly that record prefills only its tail. The equivalence gate that had to exist first
-is GATE 3b of `tests/unit/k3_model.c`: turn 2 on top of turn 1's state must be
-bit-identical -- logits, every KV row, the KDA state -- to a full prefill of the same
-transcript. Any divergence (`/reset`, an edited history) starts over. Restart from a
-`--history` file still re-prefills: no opaque state is serialised.
+Текстовый чат реализует официальное XTML-форматирование K3, перезапуск из JSONL и, при `--incremental`, сохраняет состояние KDA/MLA между ходами REPL: id записываются там, где они подаются (`src/chat/k3_prefix.h`), а ход, чей отрендеренный транскрипт начинается ровно с этой записи, делает prefill только хвоста. Проверка эквивалентности, которая должна была существовать первой, — это GATE 3b из `tests/unit/k3_model.c`: ход 2 поверх состояния хода 1 должен быть побитово идентичен — логиты, каждая строка KV, состояние KDA — полному prefill того же транскрипта. Любое расхождение (`/reset`, отредактированная история) начинает заново. Рестарт из файла `--history` всё равно делает re-prefill: непрозрачное состояние не сериализуется.
 
-## 7. Vision
+## 7. Зрение (Vision)
 
-K3 is natively multimodal. The vision tower is 27 layers and ~0.4B parameters, small,
-and its weights are ~0.9 GB, a fraction of a percent of the checkpoint. Self-contained
-enough to be tractable.
+K3 нативно мультимодальна. Vision tower — 27 слоёв и ~0,4B параметров, маленькая, и её веса — ~0,9 ГБ, доли процента от чекпоинта. Достаточно автономна, чтобы быть tractable.
 
-## 8. Tools and serving
+## 8. Инструменты и serving
 
-The message model leaves room for tool calls, but there is no tool execution or HTTP API.
-Both remain deliberately late product surface.
+Модель сообщений оставляет место для tool calls, но исполнения инструментов или HTTP API нет. Оба намеренно остаются поздней продуктовой поверхностью.
 
-## Explicitly not planned
+## Явно не планируется
 
-**A precision dial for the trunk.** The trunk is streamed losslessly rather than
-quantised, and that is a design decision, not an omission. Post-hoc int4 measures ~17%
-mean relative weight error on K3 attention tensors against ~1% for int8; streaming
-costs time, which more memory buys back, while rounding costs accuracy, which nothing
-buys back.
+**Регулятор точности для trunk.** Trunk стримится без потерь, а не квантуется — и это проектное решение, а не упущение. Post-hoc int4 даёт ~17% средней относительной ошибки веса на attention-тензорах K3 против ~1% для int8; стриминг стоит времени, которое большим объёмом памяти можно откупить, тогда как округление стоит точности, которую ничем не откупить.
 
-**GPU support.** Out of scope for this project.
+**Поддержка GPU.** Вне рамок этого проекта.

@@ -141,20 +141,20 @@ int k3_trunk_open(K3Trunk *tr, const char *dir, const K3Cfg *c, int64_t budget_b
     snprintf(p, sizeof p, "%s/trunk.json", dir);
     size_t jn = 0;
     char *txt = slurp(p, &jn);
-    if (!txt) { fprintf(stderr, "k3_trunk: cannot read %s\n", p); return -1; }
+    if (!txt) { fprintf(stderr, "k3_trunk: не могу прочитать %s\n", p); return -1; }
     /* The parser arena backs every K3TrunkTensor.name, so it must outlive the whole
      * K3Trunk. It is owned by the struct and freed in k3_trunk_close. */
     char *arena = NULL;
     jval *root = json_parse(txt, &arena);
     tr->json_arena = arena;
-    if (!root) { fprintf(stderr, "k3_trunk: %s is not valid JSON\n", p); free(txt); return -1; }
+    if (!root) { fprintf(stderr, "k3_trunk: %s не является валидным JSON\n", p); free(txt); return -1; }
 
     jval *jl = json_get(root, "layers");
-    if (!jl || jl->t != J_ARR) { fprintf(stderr, "k3_trunk: no layers array\n"); goto bad; }
+    if (!jl || jl->t != J_ARR) { fprintf(stderr, "k3_trunk: нет массива layers\n"); goto bad; }
     tr->n_layers = jl->len;
     /* An empty layers array used to reach the ring sizing below, which reads
      * lay[n_layers - 1] = lay[-1]. A trunk with no layers is not a trunk. */
-    if (tr->n_layers <= 0) { fprintf(stderr, "k3_trunk: no layers\n"); goto bad; }
+    if (tr->n_layers <= 0) { fprintf(stderr, "k3_trunk: нет слоёв\n"); goto bad; }
     tr->lay = (K3TrunkLayer *)calloc((size_t)tr->n_layers, sizeof(K3TrunkLayer));
     if (!tr->lay) goto bad;
 
@@ -168,11 +168,11 @@ int k3_trunk_open(K3Trunk *tr, const char *dir, const K3Cfg *c, int64_t budget_b
          * turns the pread offset backwards; negative nbytes skips the load
          * loop entirely and hands uninitialized heap to the kernels. */
         if (L->file_off < 0 || L->nbytes < 0) {
-            fprintf(stderr, "k3_trunk: layer %d has negative geometry\n", i);
+            fprintf(stderr, "k3_trunk: слой %d имеет отрицательную геометрию\n", i);
             goto bad;
         }
         jval *ts = json_get(e, "tensors");
-        if (!ts || ts->t != J_OBJ) { fprintf(stderr, "k3_trunk: layer %d has no tensors\n", i); goto bad; }
+        if (!ts || ts->t != J_OBJ) { fprintf(stderr, "k3_trunk: слой %d не имеет тензоров\n", i); goto bad; }
         L->nt = ts->len;
         L->t = (K3TrunkTensor *)calloc((size_t)L->nt, sizeof(K3TrunkTensor));
         if (!L->t) goto bad;
@@ -193,8 +193,8 @@ int k3_trunk_open(K3Trunk *tr, const char *dir, const K3Cfg *c, int64_t budget_b
              * heap-adjacent read. Refuse at parse time, overflow-safe. */
             if (t->off < 0 || t->nbytes < 0 || t->off > L->nbytes ||
                 t->nbytes > L->nbytes - t->off) {
-                fprintf(stderr, "k3_trunk: layer %d tensor '%s' escapes its run\n",
-                        i, t->name ? t->name : "?");
+                fprintf(stderr, "k3_trunk: тензор '%s' слоя %d выходит за границы run\n",
+                        t->name ? t->name : "?", i);
                 goto bad;
             }
         }
@@ -223,7 +223,7 @@ int k3_trunk_open(K3Trunk *tr, const char *dir, const K3Cfg *c, int64_t budget_b
         tr->fd = open(p, O_RDONLY);
     }
     if (tr->fd < 0) {
-        fprintf(stderr, "k3_trunk: cannot open %s\n", p);
+        fprintf(stderr, "k3_trunk: не могу открыть %s\n", p);
         json_free_tree(root);
         return -1;
     }
@@ -233,7 +233,7 @@ int k3_trunk_open(K3Trunk *tr, const char *dir, const K3Cfg *c, int64_t budget_b
         if (tr->direct && want != K3_TRUNK_ALIGN) {
             /* A trunk packed before the alignment change cannot be read with O_DIRECT:
              * its run offsets are arbitrary. Say so rather than fail every read. */
-            fprintf(stderr, "k3_trunk: trunk.json reports align %lld, expected %d; "
+            fprintf(stderr, "k3_trunk: trunk.json сообщает align %lld, ожидается %d; "
                             "falling back to buffered reads (repack to enable O_DIRECT)\n",
                     (long long)want, K3_TRUNK_ALIGN);
             close(tr->fd);
@@ -381,7 +381,7 @@ int k3_trunk_open(K3Trunk *tr, const char *dir, const K3Cfg *c, int64_t budget_b
             const size_t need = (size_t)((tr->lay[L].nbytes + K3_TRUNK_ALIGN - 1)
                                          & ~(int64_t)(K3_TRUNK_ALIGN - 1)) + widen;
             if (k3_alloc_direct((void **)&tr->pin[k], need) != 0) {
-                fprintf(stderr, "k3_trunk: cannot allocate %.2f GB for pinned layer %d\n",
+                fprintf(stderr, "k3_trunk: не могу выделить %.2f ГБ для закреплённого слоя %d\n",
                         (double)need / 1e9, L);
                 free(order); free(chosen);
                 return -1;
@@ -391,7 +391,7 @@ int k3_trunk_open(K3Trunk *tr, const char *dir, const K3Cfg *c, int64_t budget_b
     }
     free(order); free(chosen);
     if (k3_alloc_direct((void **)&tr->arena, (size_t)RING * (size_t)ring_slot) != 0) {
-        fprintf(stderr, "k3_trunk: cannot allocate the %.2f GB streaming ring\n",
+        fprintf(stderr, "k3_trunk: не могу выделить стриминговое кольцо %.2f ГБ\n",
                 (double)RING * ring_slot / 1e9);
         return -1;
     }
@@ -431,7 +431,7 @@ int k3_trunk_open(K3Trunk *tr, const char *dir, const K3Cfg *c, int64_t budget_b
         tr->io_state = io;
         if (RING >= 2) {
             if (pthread_create(&io->thread, NULL, trunk_io_main, io) != 0) {
-                fprintf(stderr, "k3_trunk: cannot start asynchronous reader\n");
+                fprintf(stderr, "k3_trunk: не могу запустить асинхронный читатель\n");
                 pthread_cond_destroy(&io->cv_work);
                 pthread_cond_destroy(&io->cv_done);
                 pthread_mutex_destroy(&io->mu);
@@ -608,7 +608,7 @@ static int load_run_to(K3Trunk *tr, int L, unsigned char *dst,
         }
     }
     if (failed) {
-        fprintf(stderr, "k3_trunk: short read on layer %d\n", L);
+        fprintf(stderr, "k3_trunk: короткое чтение слоя %d\n", L);
         /* Chunks complete in any order, so a partial count would be meaningless;
          * charge nothing for a layer that was not read, exactly as before. */
         *secs = now_s() - t0; *bytes = 0;
@@ -892,11 +892,11 @@ void k3_trunk_report(const K3Trunk *tr, const char *label)
 {
     const uint64_t n = tr->hits + tr->misses;
     printf("trunk [%s]\n", label ? label : "");
-    printf("  pinned %d/%d layers, ring %d slots\n", tr->npin, tr->n_layers, tr->nslot);
-    printf("  binds %llu, hits %llu (%.1f%%), reads %llu\n",
+    printf("  закреплено %d/%d слоёв, кольцо %d слотов\n", tr->npin, tr->n_layers, tr->nslot);
+    printf("  привязок %llu, попаданий %llu (%.1f%%), чтений %llu\n",
            (unsigned long long)n, (unsigned long long)tr->hits,
            n ? 100.0 * tr->hits / n : 0.0, (unsigned long long)tr->misses);
-    printf("  read %.2f GB in %.2f s (%.0f MB/s)\n",
+    printf("  прочитано %.2f ГБ за %.2f с (%.0f МБ/с)\n",
            (double)tr->bytes_read / 1e9, tr->load_seconds,
            tr->load_seconds > 0 ? (double)tr->bytes_read / 1e6 / tr->load_seconds : 0.0);
 
@@ -919,12 +919,12 @@ void k3_trunk_report(const K3Trunk *tr, const char *label)
             got  += (int64_t)tr->reads_of[L];
             if ((int)tr->reads_of[L] > want) over_layers++;
         }
-        printf("  reads %lld against %lld the walk owes (%d passes, %d pinned)",
+        printf("  чтений %lld против %lld, которые должен обход (%d проходов, %d закреплено)",
                (long long)got, (long long)owed, passes, tr->npin);
         if (over_layers == 0) {
             printf("  -- exact\n");
         } else {
-            printf("\n  %lld layer(s) read more than the walk needed:", (long long)over_layers);
+            printf("\n  %lld слой(ёв) прочитано больше, чем нужно обходу:", (long long)over_layers);
             int shown = 0;
             for (int L = 0; L < tr->n_layers && shown < 12; L++) {
                 const int want = (tr->pin_of[L] >= 0) ? 1 : passes;
@@ -953,7 +953,7 @@ void k3_trunk_report(const K3Trunk *tr, const char *label)
         const double serial = tr->load_seconds + k3_trunk_widen_wall;
         const double overlapped = serial - k3_trunk_bind_wall;
         if (overlapped > 0.0) {
-            printf("  bind wall %.2f s over %ld binds; read %.2f + widen %.2f = %.2f s of "
+            printf("  wall привязки %.2f с на %ld привязок; чтение %.2f + widen %.2f = %.2f с из "
                    "device work,\n"
                    "                    of which %.2f s (%.0f%%) overlapped compute on the "
                    "reader thread\n",
@@ -962,11 +962,11 @@ void k3_trunk_report(const K3Trunk *tr, const char *label)
                    serial > 0.0 ? 100.0 * overlapped / serial : 0.0);
         } else {
             const double other = k3_trunk_bind_wall - serial;
-            printf("  bind wall %.2f s over %ld binds  =  read %.2f + widen %.2f + other %.2f\n",
+            printf("  wall привязки %.2f с на %ld привязок  =  чтение %.2f + widen %.2f + прочее %.2f\n",
                    k3_trunk_bind_wall, k3_trunk_binds, tr->load_seconds,
                    k3_trunk_widen_wall, other);
             if (k3_trunk_bind_wall > 0.0)
-                printf("                    shares:      read %.0f%%  widen %.0f%%  other %.0f%%\n",
+                printf("                    доли:      чтение %.0f%%  widen %.0f%%  прочее %.0f%%\n",
                        100.0 * tr->load_seconds / k3_trunk_bind_wall,
                        100.0 * k3_trunk_widen_wall / k3_trunk_bind_wall,
                        100.0 * other / k3_trunk_bind_wall);

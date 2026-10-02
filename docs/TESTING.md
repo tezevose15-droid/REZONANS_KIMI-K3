@@ -1,128 +1,67 @@
-# Testing
+# Тестирование
 
-Every test in `make test` runs **without model weights**. The checkpoint is 1.56 TB; if
-correctness depended on having it, correctness would not get checked.
+Каждый тест в `make test` запускается **без весов модели**. Чекпоинт — 1,56 ТБ; если бы корректность зависела от его наличия, корректность бы не проверялась.
 
 ```bash
-make test          # everything below; about 15 s, peak RSS ~1.7 GB
-make test-all SHARD_DIR=~/k3model   # adds the checkpoint-dependent tests
+make test          # всё ниже; около 15 с, пик RSS ~1,7 ГБ
+make test-all SHARD_DIR=~/k3model   # добавляет тесты, зависящие от чекпоинта
 ```
 
-## What each gate proves
+## Что доказывает каждая проверка
 
-**`test_ops`**, every kernel against reference values, at a tolerance declared in the
-fixture manifest rather than hardcoded. Several fixtures are adversarial by construction:
-the router fixture reorders its top-2 on 5 of 6 rows, so an implementation that ignores
-the routing bias fails; the SiTU-GLU fixture drives the activation to its exact
-analytic cap.
+**`test_ops`** — каждое ядро сверяется с эталонными значениями при допуске, заявленном в манифесте фикстур, а не захардкоженном. Несколько фикстур намеренно состязательны: фикстура роутера меняет порядок top-2 на 5 из 6 строк, поэтому реализация, игнорирующая bias маршрутизации, падает; фикстура SiTU-GLU загоняет активацию к её точному аналитическому потолку.
 
-**`test_cache`**, the streaming expert cache: prefetch, eviction, and mixed batch/serial
-access. Uses a synthetic shard of structurally faithful experts, a few KB.
+**`test_cache`** — стриминговый кэш экспертов: предвыборка, вытеснение и смешанный пакетно-последовательный доступ. Использует синтетический шард из структурно достоверных экспертов в несколько КБ.
 
-**`test_trunk`**, the streaming trunk: ring-slot budget enforcement, one-slot
-guard, async prefetch, slot-isolation under concurrency, ring wrap-around, and
-truncated-read failure isolation. Uses a synthetic 3-layer trunk fixture of a few
-KB that is generated inline, so no checkpoint is required. The one-slot guard check
-fails against any build that starts the reader thread unconditionally, which is the
-condition the real model exhibited as silent token corruption: with one ring slot
-the reader would write layer L+1 over layer L while the caller was still computing
-on it, producing fluent but wrong tokens with no diagnostic.
+**`test_trunk`** — стриминговый trunk: соблюдение бюджета кольцевых слотов, защита на один слот, асинхронная предвыборка, изоляция слотов при параллельности, обёртка кольца и изоляция отказов при усечённом чтении. Использует синтетическую 3-слойную trunk-фикстуру в несколько КБ, генерируемую inline, поэтому чекпоинт не требуется. Проверка защиты на один слот падает на любой сборке, которая безусловно запускает поток чтения — условие, которое реальная модель проявляла как тихую порчу токенов: при одном кольцевом слоте читатель перезаписывал слой L+1 поверх слоя L, пока вызывающая сторона всё ещё вычисляла на нём, порождая связные, но неверные токены без диагностики.
 
-It also asserts a **byte** bound rather than only a correctness one: a pinned layer is read
-once for the whole run and a streamed layer once per pass, so anything above that is a slot
-evicted between the prefetch that filled it and the walk that needed it. That failure
-changes no token and shows up only as a device rate that flatters. It is checked per layer,
-not just in aggregate, because the aggregate can say a run went over and never which
-layers.
+Также проверяется **байтовая**, а не только корректностная граница: закреплённый слой читается один раз за весь прогон, а стримимый — один раз за проход, поэтому всё свыше — это слот, вытесненный между предвыборкой, которая его заполнила, и обходом, которому он понадобился. Этот отказ не меняет ни одного токена и проявляется лишь как завышенная скорость устройства. Проверяется послойно, а не только в агрегате, потому что агрегат может сказать, что прогон превысил, но никогда — какие слои.
 
-`t_sweep` then runs that same assertion across the *whole space* of pinned shapes — a
-93-layer trunk, ring depths 1 to 4, budgets from a bare ring to fully resident. This is the
-part worth copying elsewhere. Two hand-built fixtures had already been shaped, deliberately
-and with reasoning attached, to expose this bug; both passed a build that a real run showed
-was still reading 13.7% too much, and two further explanations were argued from the pinned
-set's shape without evidence. The sweep failed 40 of 100 shapes on that same build and
-named the worst one. **A fixture proves an arrangement is handled; only enumeration proves
-the arrangement that escapes is not there.**
+`t_sweep` затем прогоняет то же утверждение по *всему пространству* закреплённых форм — 93-слойный trunk, глубины кольца 1–4, бюджеты от голого кольца до полностью резидентного. Это часть, которую стоит копировать в другие места. Две рукотворные фикстуры уже были целенаправленно сформированы, с приложенным reasoning, чтобы выявить этот баг; обе прошли сборку, которая при реальном прогоне всё ещё читала на 13,7% лишнего, и ещё два объяснения выводились из формы закреплённого множества без доказательств. Sweep провалил 40 из 100 форм на той же сборке и назвал худшую. **Фикстура доказывает, что arrangement обработан; только перебор доказывает, что ускользнувшего arrangement нет.**
 
-**`test_st`**, the safetensors reader: dtype widening, offsets, tail bytes, escaped
-tensor names, and a tensor deliberately containing non-finite values.
+**`test_st`** — читатель safetensors: расширение dtype, смещения, хвостовые байты, экранированные имена тензоров и тензор, намеренно содержащий неконечные значения.
 
-**`test_model_stream`**, the ultra-low-memory model-table reader. It gathers one BF16
-embedding row and projects through the lm_head in bounded aligned chunks, then requires
-both results to be bit-identical to the resident kernels. It also injects a corrupt file
-offset and requires the resulting short read to fail without being counted as valid I/O.
+**`test_model_stream`** — сверхэкономный читатель таблицы модели. Собирает одну BF16-строку эмбеддинга и проецирует через lm_head ограниченными выровненными чанками, затем требует побитовой идентичности обоих результатов резидентным ядрам. Также инжектирует повреждённое смещение файла и требует, чтобы resulting короткий read падал, не засчитываясь как валидный I/O.
 
-**`test_cfg`**, the config reader against the fixture layout, plus three malformed configs
-in `tests/fixtures/cfg/` it must **refuse**: `no_layermap.json` (no `full_attn_layers` at
-all), `bad_layer_index.json` (a one-based index outside `1..n_layers`), and
-`bad_topk.json` (a top-k above `K3_MAX_TOPK`). Each is the working config with exactly one
-field mutated, so a rejection can only come from that field. This matters more than it
-looks: a config reader that substitutes defaults for missing fields produces a model that
-loads, runs, and is architecturally wrong, with nothing to indicate it.
+**`test_cfg`** — читатель конфигурации против фикстурной раскладки, плюс три malformed-конфига в `tests/fixtures/cfg/`, которые он должен **отвергнуть**: `no_layermap.json` (вообще нет `full_attn_layers`), `bad_layer_index.json` (индекс с единицы вне `1..n_layers`) и `bad_topk.json` (top-k выше `K3_MAX_TOPK`). Каждый — рабочая конфигурация с ровно одним изменённым полем, поэтому отказ может исходить только из этого поля. Это важнее, чем кажется: загрузчик конфигурации, подставляющий значения по умолчанию для отсутствующих полей, порождает модель, которая загружается, запускается и архитектурно неверна, без каких-либо признаков.
 
-**`scale_test`**, the same kernels at the real released dimensions: 7168 wide, 93 layers,
-96 heads, 896 experts. It checks the layer map really is 69 KDA + 24 MLA, that every
-scratch-sizing helper returns a sane value at full width rather than only at fixture
-width, and it allocates and runs one complete 7168-wide KDA layer. That last step is a
-single **1.77 GB** allocation, which is the only real resource requirement anywhere in
-`make test`; on a machine too small for it the test says so and fails rather than
-skipping.
+**`scale_test`** — те же ядра в реальных выпущенных размерностях: ширина 7168, 93 слоя, 96 голов, 896 экспертов. Проверяет, что карта слоёв действительно 69 KDA + 24 MLA, что каждый хелпер расчёта scratch возвращает разумное значение на полной ширине, а не только на ширине фикстуры, и выделяет и прогоняет один полный KDA-слой шириной 7168. Этот последний шаг — единственное выделение **1,77 ГБ**, которое является единственным реальным требованием к ресурсам где-либо в `make test`; на слишком маленькой машине тест сообщает об этом и падает, а не пропускается.
 
-**`test_tok`**, byte-exact roundtrip (encode then decode recovers the input exactly).
-With `tools/tok_parity.py` it also compares token-for-token against the reference
-tokenizer across CJK, emoji, ZWJ sequences, accents, contractions and whitespace runs.
-This is the one gate that cannot run on a clean checkout: `tiktoken.model` has 163,584
-entries and ships with the checkpoint, not with this repository. `make test` reports it as
-**NOT RUN** rather than passing it quietly.
+**`test_tok`** — побайтовый roundtrip (кодирование затем декодирование восстанавливает вход точно). С `tools/tok_parity.py` также сравнивает токен-в-токен с эталонным токенизатором на CJK, эмодзи, ZWJ-последовательностях, акцентах, сокращениях и пробельных прогонах. Это единственная проверка, которая не может запуститься на чистом checkout: `tiktoken.model` имеет 163 584 записи и поставляется с чекпоинтом, а не с этим репозиторием. `make test` сообщает о ней как **NOT RUN**, а не тихо пропускает.
 
-You do not need the 1.56 TB checkpoint to run it. Four small files are enough, about
-2.8 MB in total:
+Вам не нужен чекпоинт 1,56 ТБ, чтобы её запустить. Достаточно четырёх маленьких файлов, всего около 2,8 МБ:
 
 ```bash
 hf download moonshotai/Kimi-K3 \
     tiktoken.model tokenizer_config.json config.json tokenization_kimi.py \
     --local-dir ~/k3tok
 
-make test TOK_FILES=~/k3tok                 # the roundtrip leg now runs
-make tok  TOK_FILES=~/k3tok                 # token-for-token parity, needs `pip install tiktoken`
-./bin/test_cfg real ~/k3tok/config.json     # the released nested config
+make test TOK_FILES=~/k3tok                 # теперь запускается roundtrip-часть
+make tok  TOK_FILES=~/k3tok                 # токен-в-токен паритет, нужен `pip install tiktoken`
+./bin/test_cfg real ~/k3tok/config.json     # выпущенная вложенная конфигурация
 ```
 
-`tokenization_kimi.py` is required by `tools/tok_parity.py`, which reads the split regex
-out of it rather than restating it; without that file the parity run stops before its
-first case. The roundtrip leg in `make test` needs only `tiktoken.model` and
-`tokenizer_config.json`.
+`tokenization_kimi.py` требуется для `tools/tok_parity.py`, который читает split-regex из него, а не переформулирует; без этого файла паритетный прогон останавливается до первого кейса. Roundtrip-части в `make test` нужны только `tiktoken.model` и `tokenizer_config.json`.
 
-**`test_chat`**, the official K3 XTML text-chat contract without weights. It takes the
-released tokenizer directory (`TOK_FILES`, the same one the tokenizer gate uses) and
-verifies rendered bytes and token ids, assistant reasoning preservation, control-marker
-injection resistance, the exact assistant turn terminator, strict JSONL
-round-trip/rejection, `/reset`, and fixed-seed PCG32 sampling. Like `test_tok` it
-prints NOT RUN when no `tiktoken.model` is present: the vocabulary ships with the
-checkpoint, not with this repository, and is deliberately not copied into it.
+**`test_chat`** — контракт официального K3 XTML текстового чата без весов. Берёт выпущенный каталог токенизатора (`TOK_FILES`, тот же, что использует проверка токенизатора) и верифицирует отрендеренные байты и id токенов, сохранение reasoning ассистента, устойчивость к инъекции control-маркеров, точный терминатор хода ассистента, строгий JSONL round-trip/отклонение, `/reset` и детерминированную выборку PCG32 с фиксированным seed. Как и `test_tok`, выводит NOT RUN при отсутствии `tiktoken.model`: словарь поставляется с чекпоинтом, а не с этим репозиторием, и намеренно в него не копируется.
 
-**`k3_model`**, the end-to-end gate, on a tiny model whose tensor graph matches the released
-architecture exactly:
+**`k3_model`** — сквозная проверка на крошечной модели, чей граф тензоров точно совпадает с выпущенной архитектурой:
 
-- teacher forcing: every position matches the reference
-- full-recompute state reuse: every logit is bit-identical with one recurrent-state slot
-- greedy decode: every generated token matches
-- incremental decode: same tokens as full recompute, with KV cache and carried
-  recurrent state
+- teacher forcing: каждая позиция совпадает с эталоном
+- повторное использование состояния при полном перевычислении: каждый логит побитово идентичен при одном слоте рекуррентного состояния
+- жадный декодинг: каждый сгенерированный токен совпадает
+- инкрементальный декодинг: те же токены, что и при полном перевычислении, с KV-кэшем и переносимым рекуррентным состоянием
 
-All three must be *exact*. There is no tolerance on token identity.
+Все три должны совпадать *точно*. Допуска на идентичность токенов нет.
 
-## Checkpoint-dependent tests
+## Тесты, зависящие от чекпоинта
 
-Need `SHARD_DIR`:
+Требуют `SHARD_DIR`:
 
-- **`test_expert`**, reads an expert from released shards and compares against
-  independently fetched bytes.
-- **`test_real_layer`**, runs one released layer at full width against the reference.
-- **`tools/conform_all.py`**, all 93 layers individually against the reference.
+- **`test_expert`** — читает эксперта из выпущенных шардов и сравнивает с независимо полученными байтами.
+- **`test_real_layer`** — прогоняет один выпущенный слой на полной ширине против эталона.
+- **`tools/conform_all.py`** — все 93 слоя индивидуально против эталона.
 
-## Adding a test
+## Добавление теста
 
-Fixtures are generated by `tools/emit_fixtures.py` and carry their own tolerance in a
-manifest. A test that cannot fail is not a test, make the fixture adversarial: if a
-plausible wrong implementation would pass, change the input until it would not.
+Фикстуры генерируются `tools/emit_fixtures.py` и несут собственный допуск в манифесте. Тест, который не может упасть, — не тест; сделайте фикстуру состязательной: если правдоподобно неверная реализация всё равно пройдёт, меняйте вход, пока не перестанет.
